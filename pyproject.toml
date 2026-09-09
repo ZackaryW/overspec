@@ -1,0 +1,34 @@
+[project]
+name = "overspec"
+version = "0.1.0"
+description = "Compose reusable traits into native OpenSpec project guidance"
+readme = "README.md"
+authors = [
+    { name = "ZackaryW", email = "gitzackw@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "packaging>=24",
+    "rich>=15.0.0",
+    "ruamel-yaml>=0.18",
+    "tomlkit>=0.13",
+    "typer>=0.27.2",
+    "zuat",
+    "zuu",
+]
+
+[project.scripts]
+overspec = "overspec:main"
+
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+zuat = { git = "https://github.com/ZackaryW/zuat" }
+zuu = { git = "https://github.com/ZackaryW/zuu" }
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

@@ -1,0 +1,35 @@
+[[trait]]
+name = "zuu"
+attach = "operations.apply.guidance"
+body = """
+Prefer zuu's public APIs before writing equivalent utilities. Inspect the
+available cases and their contracts for the project's version, and reuse those
+that fit. Keep application decisions in the application. Explain concrete
+mismatches before adding custom mechanics, and verify observable behavior
+through the public integration boundary.
+"""
+details = """
+Check each candidate API's inputs, outputs, side effects, error behavior, and
+limitations against the project's requirements. Reuse suitable capabilities
+directly or through a small adapter that serves a real project boundary. Keep
+application-specific decisions in the application. Do not copy library source,
+rely on private modules, or add wrappers that merely rename public calls.
+
+When no available capability fits, explain the concrete mismatch and implement
+only the missing behavior. Do not change the project's intended behavior merely
+to increase library usage.
+
+Verify observable results through the public integration boundary. Exercise
+relevant failure cases and use controlled external dependencies so tests remain
+repeatable. Mock-call assertions alone do not establish that the integration
+behaves correctly.
+"""
+
+[trait.assert.1]
+[[trait.assert.1.assertion]]
+type = "files-exist"
+paths = [".python-version", "uv.lock"]
+
+[[trait.assert.1.assertion]]
+type = "python-dependency"
+name = "zuu"

@@ -1,0 +1,45 @@
+[[trait]]
+name = "zmem-commits"
+attach = "context"
+body = """
+Invoke zmem-author-commits after each verified source implementation milestone
+for implementation commits and durable memory, excluding OpenSpec artifacts.
+"""
+details = """
+A meaningful milestone is a coherent source implementation change whose checks
+have passed. OpenSpec-only changes do not count as implementation milestones.
+Exclude OpenSpec planning, specification, task, and archive artifacts from these
+commits.
+
+Do not create an empty commit just to mark a milestone.
+
+The commit-authoring and memory-annotation workflow stays in zmem-author-commits;
+these details define when to invoke it and which work belongs in scope.
+"""
+
+[trait.assert.1]
+[[trait.assert.1.assertion]]
+type = "which"
+app = "zmem"
+
+[[trait]]
+name = "zmem-archive"
+attach = "operations.archive.guidance"
+body = """
+After archiving completes, invoke zmem-author-commits for the final implementation
+and memory review. Exclude OpenSpec artifacts from any resulting commits.
+"""
+details = """
+Invoke the skill after successful archive completion, not before or after a
+skipped or failed archive. Review remaining implementation work and durable
+memory, following the workflow in zmem-author-commits.
+
+Keep resulting commits scoped to implementation; exclude OpenSpec planning,
+specification, task, and archive artifacts. Do not create an empty commit merely
+to mark archive completion.
+"""
+
+[trait.assert.1]
+[[trait.assert.1.assertion]]
+type = "which"
+app = "zmem"

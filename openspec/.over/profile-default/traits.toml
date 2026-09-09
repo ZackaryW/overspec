@@ -1,0 +1,84 @@
+[[compiletime-trait]]
+name = "require-codegraph"
+attach = "context"
+body = """
+This project should use codegraph for both references and itself.
+"""
+
+[compiletime-trait.assert.1]
+[[compiletime-trait.assert.1.assertion]]
+type = "which"
+app = "codegraph"
+
+[[compiletime-trait]]
+name = "require-zmem"
+attach = "context"
+actions = [
+    {"type" = "remove-trait", "trait" = "require-codegraph"}
+]
+body = """
+Use codegraph for current code structure and zmem for decisions and lessons.
+Before changing behavior, resolve the symbol with codegraph and recall zmem for
+its file or module. Keep repository memory authoritative in zmem and record new
+decisions and lessons on the commit carrying the change.
+"""
+details = """
+Use codegraph for both the project and its references, with zmem as the memory
+layer. Neither replaces the other; commits connect structure and history.
+
+- codegraph is structure — what the code is now. Prefer it over grep/find.
+- zmem is history — decisions and lessons about that code, keyed by commit.
+
+Before changing behavior, resolve the symbol with codegraph, then recall zmem for
+its file or module. Query zmem rather than copying it into codegraph's memory store;
+it stays authoritative for validity, decay, cancellation, and branch state. Record
+new decisions and lessons on the commit that carries the change.
+"""
+
+[compiletime-trait.assert.1]
+[[compiletime-trait.assert.1.assertion]]
+type = "require-trait"
+trait = "require-codegraph"
+
+[[compiletime-trait.assert.1.assertion]]
+type = "which"
+app = "zmem"
+
+[[compiletime-trait]]
+name = "only-zmem"
+attach = "context"
+body = """
+Use query-zmem-memory to recall decisions and lessons about a file or module.
+Use query-codegraph-memory to resolve symbols in the current codebase, not to
+recall decisions or lessons; zmem remains authoritative for that history.
+"""
+
+[compiletime-trait.assert.1]
+or = true
+
+[[compiletime-trait.assert.1.assertion]]
+type = "~loaded-trait"
+trait = "require-zmem"
+
+[[compiletime-trait.assert.1.assertion]]
+type = "~loaded-trait"
+trait = "require-codegraph"
+
+[[runtime-trait]]
+name = "do-not-archive-openspec-change"
+attach = "operations.archive.guidance"
+body = """
+Do not archive this change to openspec. It is a temporary change. When dissolving it, please fold it into zmem via the zmem-author-commits skill.
+"""
+
+[runtime-trait.assert.1]
+or = true
+
+[[runtime-trait.assert.1.assertion]]
+type = "runtime-context-match"
+kv = "do-not-archive=true"
+
+[[runtime-trait.assert.1.assertion]]
+type = "runtime-context-includes"
+k = "do-not-archive"
+includes = "$activeChanges"

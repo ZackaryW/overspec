@@ -1,0 +1,69 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
+
+# Guidance comes from profile-default; edit traits and run overspec sync.
+operations:
+  apply:
+    guidance:
+      - | # over:tdd
+        For each behavior change, write and run a test that fails for the intended
+        reason before implementing. Implement minimally, rerun to green, then refactor
+        under passing tests. Never weaken tests to manufacture a pass. Run affected
+        tests and required broader checks before completion, and report observed
+        red/green evidence. Changes without behavioral impact need appropriate
+        verification, not artificial failing tests.
+      - | # over:zuu
+        Prefer zuu's public APIs before writing equivalent utilities. Inspect the
+        available cases and their contracts for the project's version, and reuse those
+        that fit. Keep application decisions in the application. Explain concrete
+        mismatches before adding custom mechanics, and verify observable behavior
+        through the public integration boundary.
+  archive:
+    guidance:
+      - | # over:zmem-archive
+        After archiving completes, invoke zmem-author-commits for the final implementation
+        and memory review. Exclude OpenSpec artifacts from any resulting commits.
+      - | # over:do-not-archive-openspec-change
+        From this project's root, run:
+        overspec trait resolve --resolution a4ec33b6165fd33aab6a91741510868e489e13c7f7f03880e493bc9a2c5a12af --attach operations.archive.guidance --trait do-not-archive-openspec-change
+        Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
+context: |
+  Use codegraph for current code structure and zmem for decisions and lessons.
+  Before changing behavior, resolve the symbol with codegraph and recall zmem for
+  its file or module. Keep repository memory authoritative in zmem and record new
+  decisions and lessons on the commit carrying the change.
+  <!-- over:require-zmem -->
+
+  Invoke zmem-author-commits after each verified source implementation milestone
+  for implementation commits and durable memory, excluding OpenSpec artifacts.
+  <!-- over:zmem-commits -->

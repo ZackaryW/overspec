@@ -1,0 +1,43 @@
+[[trait]]
+name = "tdd"
+attach = "operations.apply.guidance"
+body = """
+For each behavior change, write and run a test that fails for the intended
+reason before implementing. Implement minimally, rerun to green, then refactor
+under passing tests. Never weaken tests to manufacture a pass. Run affected
+tests and required broader checks before completion, and report observed
+red/green evidence. Changes without behavioral impact need appropriate
+verification, not artificial failing tests.
+"""
+details = """
+1. Select one observable behavior and the smallest meaningful automated test
+   that proves it through public outputs, state transitions, or side effects.
+   For a bug fix, first reproduce the bug with a failing regression test.
+2. Write or update that test before changing implementation code. Run it and
+   observe the failure. Confirm the failure is caused by the missing or wrong
+   behavior, not an unrelated dependency, fixture, syntax, or environment error.
+   A test that already passes does not establish red; correct the test or choose
+   the next missing behavior before implementing.
+3. Only after observing the intended red result, make the smallest implementation
+   change needed to satisfy the test. Reuse established project boundaries and
+   relevant dependency APIs. Do not implement additional untested behaviors.
+4. Rerun the focused test and observe green. If it still fails, correct the
+   implementation and rerun it. Do not weaken assertions, skip the test, or
+   change the expected behavior merely to obtain a passing result.
+5. Refactor only after green. Preserve behavior and rerun affected tests after
+   refactoring. Finish the current red-green-refactor cycle before starting the
+   next behavior, and repeat the cycle in small increments.
+6. Prefer focused pytest tests for behavior that they can establish completely.
+   Use broader integration or Behave coverage when the acceptance evidence spans
+   components. Assert actual outcomes; source matching, file counts, and tests
+   that merely mirror implementation structure are not behavioral proof.
+7. Run affected tests throughout implementation, then the relevant broader suites
+   and required build or validation checks before declaring completion. Report
+   the observed red failure, the subsequent green result, and checks not run.
+   Never claim a test ran or passed without observing its result.
+
+This process governs implementation behavior changes. Documentation-only edits
+and mechanical changes without behavior changes need appropriate verification,
+not artificial failing tests. If a required behavioral test cannot run, report
+the obstacle; do not claim that the red or green step was completed.
+"""
