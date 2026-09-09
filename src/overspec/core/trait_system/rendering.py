@@ -3,6 +3,7 @@ import math
 import re
 
 from zuu.case8 import LayeredMapping
+from ..variables import validate_values
 
 
 VARIABLE = re.compile(r"\$\$|\$\{([^{}]+)\}")
@@ -10,14 +11,7 @@ VARIABLE = re.compile(r"\$\$|\$\{([^{}]+)\}")
 
 def variables(*layers):
     for layer in layers:
-        if any(
-            not isinstance(k, str)
-            or type(v) not in (str, int, float, bool, type(None))
-            or isinstance(v, float)
-            and not math.isfinite(v)
-            for k, v in layer.items()
-        ):
-            raise ValueError("Variables must have string keys and finite scalar values")
+        validate_values(layer)
     return LayeredMapping(json_maps=[json.dumps(layer) for layer in layers]).to_dict()
 
 

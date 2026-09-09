@@ -1,6 +1,7 @@
 """Project lifecycle commands and human-readable sync previews."""
 
 from typing import Annotated
+from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -46,9 +47,73 @@ def initialize(
     project: ProjectOption = None,
     json_output: JsonOption = False,
     vars_file: VarsOption = None,
+    setup_only: Annotated[
+        bool,
+        typer.Option(
+            help="Set up local variable files without compiling or syncing.",
+            rich_help_panel="Setup",
+        ),
+    ] = False,
+    change_roots: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--change-root",
+            help="Exact OpenSpec change root; repeat to set up several instead of discovery.",
+            rich_help_panel="Setup",
+        ),
+    ] = None,
+    store: Annotated[
+        str | None,
+        typer.Option(
+            help="OpenSpec store used only for active-change discovery.",
+            rich_help_panel="Setup",
+        ),
+    ] = None,
 ):
-    """Evaluate compile-time traits and retain the first compilation."""
-    compilation(ctx, home, project, vars_file, json_output, update=False)
+    """Set up local variables and retain the first compilation, or only set up files."""
+    from overspec.core import storage
+    from overspec.core.discovery import discover_changes
+    from overspec.core.setup import setup_variables
+
+    if store is not None and change_roots:
+        raise typer.BadParameter("--store and --change-root are mutually exclusive")
+    if setup_only and vars_file:
+        raise typer.BadParameter("--vars-file does not apply to --setup-only")
+    owner = target(ctx, home, project)
+    if (
+        not setup_only
+        and storage.read_bytes(owner.root, "openspec/.over/.state/compiled.json")
+        is not None
+    ):
+        raise ValueError("Compilation already exists; use update or init --setup-only")
+    values = json_file(vars_file)
+    roots = change_roots if change_roots else discover_changes(owner.root, store=store)
+    result = {"setup": setup_variables(owner.root, roots)}
+    if result["setup"]["success"] and not setup_only:
+        result["compilation"] = owner.initialize(values=values)
+    if not emit_json(ctx, json_output, result):
+        console = Console(highlight=False)
+        for item in result["setup"]["targets"]:
+            console.print(
+                f"{item['status']}: {item['path']} (ignore: {item['ignore']})",
+                markup=False,
+            )
+            if item["tracked"]:
+                console.print(
+                    "Already tracked: review index cleanup explicitly.", markup=False
+                )
+            if item["vars_ignored"]:
+                console.print(
+                    "Authored .vars.toml is already ignored by existing Git rules.",
+                    markup=False,
+                )
+            if item.get("error"):
+                console.print(item["error"], markup=False)
+        if result.get("compilation"):
+            console.print("Compilation: " + result["compilation"], markup=False)
+            console.print("Next: overspec sync --dry-run")
+    if not result["setup"]["success"]:
+        raise typer.Exit(1)
 
 
 @guard

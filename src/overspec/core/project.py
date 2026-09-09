@@ -9,6 +9,7 @@ from zuu.case5 import ConfinedPath
 
 from . import storage
 from .profiles import select_profile, settings, trait_files
+from .variables import file_layers
 from .trait_system.evaluator import evaluate, validate_references
 from .trait_system.rendering import VARIABLE, variables
 from .trait_system.sources import compose, parse_document
@@ -52,7 +53,7 @@ class Project:
         effective, overridden = compose(parse(profile_files), parse(local_files))
         validate_references(effective)
         base = variables(
-            settings(self.home).get("vars", {}), settings(self.over).get("vars", {})
+            self.configured_variables(), *file_layers(self.root, "openspec/.over/")
         )
         return (
             effective,
@@ -60,6 +61,20 @@ class Project:
             [selected, str(directory) if directory else None],
             base,
         )
+
+    def configured_variables(self):
+        return variables(
+            settings(self.home).get("vars", {}), settings(self.over).get("vars", {})
+        )
+
+    def variable_evidence(self):
+        names = ("openspec/.over/.vars.toml", "openspec/.over/.current.toml")
+        present = tuple(
+            name for name in names if storage.read_bytes(self.root, name) is not None
+        )
+        return present, FileSystemSnapshot.capture(
+            [self.root / name for name in present]
+        ) if present else None
 
     @staticmethod
     def compatibility(traits, selection, base):
@@ -85,6 +100,7 @@ class Project:
             is not None
         ):
             raise ValueError("Compilation already exists; use update")
+        variable_evidence = self.variable_evidence()
         traits, _, selection, base = self.inventory()
         inputs = variables(base, values or {})
         signature = self.compatibility(traits, selection, base)
@@ -103,6 +119,10 @@ class Project:
         }
 
         def recheck():
+            if self.variable_evidence() != variable_evidence:
+                raise ValueError(
+                    "Variable files changed during compilation; retry update"
+                )
             current = self.inventory()
             if self.compatibility(current[0], current[2], current[3]) != signature:
                 raise ValueError("Sources changed during compilation; retry update")
@@ -173,7 +193,12 @@ class Project:
         pointer = storage.read_json(self.root, "openspec/.over/.state/compiled.json")
         storage.load_bundle(self.root, "compilations", pointer.get("id"))
         paths.append(self.state / "compilations" / (pointer["id"] + ".json"))
-        return selection, str(directory), FileSystemSnapshot.capture(paths)
+        return (
+            selection,
+            str(directory),
+            FileSystemSnapshot.capture(paths),
+            self.variable_evidence(),
+        )
 
     def sync(self, *, dry_run=False, values=None):
         from .projection import config_target, owned_fingerprint, project_yaml
