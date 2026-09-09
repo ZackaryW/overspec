@@ -153,7 +153,7 @@ class Project:
             values=inputs,
         )
         return {
-            "version": 1,
+            "version": 2,
             "root": str(self.root),
             "profile": selection,
             "compilation": pointer["id"],
@@ -168,6 +168,7 @@ class Project:
                 for t in overridden
             ],
             "variables": inputs,
+            "runtime_defaults": variables(self.configured_variables(), values or {}),
             "static": result,
         }
 

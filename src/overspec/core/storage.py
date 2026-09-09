@@ -91,7 +91,8 @@ def load_bundle(root, namespace, identity):
     if (
         digest(value) != identity
         or value.get("root") != str(root)
-        or value.get("version") != 1
+        or type(value.get("version")) is not int
+        or value.get("version") not in ((1, 2) if namespace == "resolutions" else (1,))
     ):
         raise ValueError("Corrupt or root-mismatched resolution; resync")
     return value

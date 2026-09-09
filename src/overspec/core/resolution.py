@@ -3,6 +3,9 @@
 import shlex
 
 from . import storage
+from .change_scope import change_root
+from .variables import file_layers
+from .trait_system.rendering import variables
 from .trait_system.sources import parse_trait
 from .trait_system.evaluator import evaluate, validate_references
 
@@ -38,14 +41,21 @@ def contributions(bundle, identity):
             "Supply --context-file <path> when current invocation context is available, "
             "and apply the returned guidance to this operation.\n"
         )
+        if bundle["version"] >= 2:
+            body += (
+                "For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json "
+                "(preserving the selected --store), then append --change-root <changeRoot> to this command. "
+                "Without a selected change, use project variables only.\n"
+            )
         result.append({"name": ",".join(names), "attach": attach, "body": body})
     return result
 
 
-def resolve_runtime(root, identity, attach, names, context=None):
+def resolve_runtime(root, identity, attach, names, context=None, *, change=None):
     if not isinstance(context if context is not None else {}, dict):
         raise ValueError("Runtime context must be a JSON object")
     bundle = storage.load_bundle(root, "resolutions", identity)
+    selected = change_root(change) if change is not None else None
     traits = [
         parse_trait(t["declaration"], t["phase"], t["origin"]) for t in bundle["traits"]
     ]
@@ -56,9 +66,19 @@ def resolve_runtime(root, identity, attach, names, context=None):
         raise ValueError(
             "Unknown or duplicate runtime trait IDs or mismatched attachment"
         )
-    values = {**bundle["variables"], **(context or {})}
+    if bundle["version"] == 1:
+        values = {**bundle["variables"], **(context or {})}
+        runtime = context
+    else:
+        values = variables(
+            bundle["runtime_defaults"],
+            *file_layers(root, "openspec/.over/"),
+            *(file_layers(selected) if selected is not None else []),
+            context or {},
+        )
+        runtime = values
     state = evaluate(
-        group, root, prior=bundle["static"], values=values, runtime=context
+        group, root, prior=bundle["static"], values=values, runtime=runtime
     )
     return [
         {"name": t.name, "attach": t.attach, "body": state["bodies"][t.name]}

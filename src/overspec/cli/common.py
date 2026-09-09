@@ -40,7 +40,7 @@ VarsOption = Annotated[
         "--vars-file",
         exists=True,
         dir_okay=False,
-        help="JSON object containing scalar rendering variables.",
+        help="JSON variable overrides; lists are supported but only scalars render into bodies.",
         rich_help_panel="Inputs",
     ),
 ]

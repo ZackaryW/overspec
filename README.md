@@ -39,6 +39,22 @@ Run commands through `uv run overspec` when using this checkout rather than an
 installed console command. Remote retrieval is available after enabling profile
 mode, as described below.
 
+Use the repository's `overspec-bootstrap` skill for first-time orientation or
+setup after creating another change. Normal init discovers active changes through
+OpenSpec and initializes missing `.current.toml` files. With an existing
+compilation, setup can be repeated independently:
+
+```sh
+overspec init --setup-only --project /path/to/project
+overspec init --setup-only --project /path/to/project --store team
+overspec init --setup-only --project /path/to/project --change-root /resolved/change/one --change-root /resolved/change/two
+```
+
+Obtain exact roots from `openspec status --change <name> --json`, preserving
+`--store <id>` when selected. `--store` on init only scopes discovery; it is
+mutually exclusive with explicit roots. Setup-only preserves compilation, config,
+profile mode, and existing current-file contents. It never fetches profiles.
+
 Sync deliberately replaces all existing context and rules, plus apply/archive
 guidance. Put any manual guidance you want to retain in traits before syncing.
 Other configuration values, including unknown keys and operation siblings, survive.
@@ -250,10 +266,37 @@ the same attachment group; runtime actions cannot suppress earlier phases.
 
 Bodies support `${key}` scalar interpolation and `$$` for a literal dollar. Names,
 attachments, and details are never interpolated. Missing or non-scalar body values
-fail; body text is never executed. Put scalar variables under `[vars]` in user or
-project `.over/config.toml`, or pass a JSON object with `--vars-file` to init, update,
-sync, or static resolve. Invocation values override project values, which override
-user values. Compile-time values remain frozen until update. Changes to relevant
+fail; body text is never executed. Optional variable files contain only `[vars]`:
+
+```toml
+[vars]
+language = "Python"
+strict = true
+reviewers = ["maintainer", "peer"]
+"build.target" = "desktop"
+```
+
+Use `openspec/.over/.vars.toml` for shared persistent defaults and
+`openspec/.over/.current.toml` for mutable local state. The same filenames can
+live directly in a selected OpenSpec change root, including an external store.
+`.vars.toml` is optional and never automatically created; commit it when authored.
+Init creates only missing current files, preserving existing bytes and times.
+In each Git worktree, zuu verifies the `.current.toml` basename ignore pattern
+without duplicating effective coverage. Setup reports tracked current files,
+preexisting rules that ignore authored persistent files, and non-Git roots where
+ignore coverage is unavailable. It never untracks files or initializes Git.
+Partial setup reports each target's outcome and can be retried.
+
+Missing/empty documents contribute no variables. Values can be finite scalars or
+lists of scalars; lists replace whole values. Dates, nested tables/lists, and other
+top-level fields are errors. Keys are literal, including quoted dotted keys.
+Explicit JSON still supports null; there is no deletion sentinel. Lists cannot
+be interpolated into bodies.
+
+For static init/update/sync/resolve, precedence from highest to lowest is
+`--vars-file` JSON, project current, project persistent, project
+`.over/config.toml` vars, then user `~/.overspec/config.toml` vars. Change files
+never affect shared static guidance. Compile-time values remain frozen until update. Changes to relevant
 compile-time definitions, details, activation, or configured inputs require update;
 ordinary/runtime-only edits need only sync.
 
@@ -284,7 +327,21 @@ overspec trait resolve --resolution <id> --attach operations.archive.guidance --
 
 Run it from the owning project root, or supply `--project`. A context file is a JSON
 object, for example `{"do-not-archive": ["example"], "activeChanges": ["example"]}`.
-Missing context is an empty object; invocations do not share context. Returned
+For newly synced version-2 resolutions, precedence is explicit context JSON,
+selected-change current, selected-change persistent, project current, project
+persistent, then retained configured defaults. Those defaults contain user/project
+config and sync's explicit JSON, excluding variable-file layers. File layers are
+read fresh for every invocation; removing a temporary file removes its override.
+Both assertions and rendering see the final mapping. Exact matching remains typed;
+includes supports list membership or `$name` list overlap, while equality does not
+dereference variables. No regex, glob, or expression matching is added.
+
+Append `--change-root <path>` from OpenSpec status to the emitted runtime command
+for a selected change. The shared config contains no fixed change path or values.
+Without selection only project layers apply. An invalid, moved, or redirected root
+fails rather than falling back to another change. Version-1 commands retain captured
+rendering variables and invocation-only assertions, ignoring these live files;
+resync deliberately adopts version 2. Invocations do not share context. Returned
 matched, unsuppressed bodies have individual name markers. Runtime resolution uses
 the saved group and its history, runs offline, and writes no state. It does not
 advance, block, or archive OpenSpec changes.
@@ -305,7 +362,8 @@ Default detail lookup uses the last successful sync receipt and verifies owned
 config values and markers. Editing the active profile after sync does not change
 the saved explanation. Edited owned config requires resync or an explicit historical
 ID; unowned edits do not invalidate the receipt. Lookup reports origin and phase,
-does not reevaluate conditions, and returns an explicit message if details are absent.
+does not reevaluate conditions or read live variable files, and returns an explicit
+message if details are absent. Malformed current files do not prevent saved lookup.
 
 State lives in `openspec/.over/.state/`. Bundles are immutable, content-addressed,
 and bound to the project root. Keep the matching state to execute retained runtime

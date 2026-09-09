@@ -119,7 +119,8 @@ def test_version_one_legacy_bundle_stays_readable_after_grouped_sync(project):
     )
     project.initialize()
     bundle = deepcopy(project.prepare())
-    assert bundle["version"] == 1
+    bundle["version"] = 1
+    bundle.pop("runtime_defaults", None)
     for decision in bundle["static"]["decisions"].values():
         decision.pop("condition", None)
     old = storage.publish(project.root, "resolutions", bundle)

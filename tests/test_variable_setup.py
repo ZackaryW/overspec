@@ -139,6 +139,27 @@ def test_discovery_rejects_malformed_results(project, payload):
     assert not (project.over / ".current.toml").exists()
 
 
+def test_discovery_errors_and_archived_exclusion(project):
+    from overspec.core.discovery import discover_changes
+    from zuu.case3 import ProcessResult
+
+    for code, payload in [(1, ""), (0, '{"changes":[{"name":"one"}]}')]:
+
+        def runner(argv, cwd):
+            return ProcessResult(code, payload, "injected OpenSpec failure")
+
+        with pytest.raises(ValueError, match="OpenSpec"):
+            discover_changes(project.root, runner=runner)
+    calls = []
+
+    def archived(argv, cwd):
+        calls.append(argv)
+        return ProcessResult(0, '{"changes":[{"name":"old","status":"archived"}]}', "")
+
+    assert discover_changes(project.root, runner=archived) == []
+    assert len(calls) == 1
+
+
 def test_ignore_verification_rollback_and_stale_plan(project, monkeypatch):
     from overspec.core import setup
 

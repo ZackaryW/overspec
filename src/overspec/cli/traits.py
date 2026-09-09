@@ -87,6 +87,13 @@ def resolve(
             rich_help_panel="Runtime",
         ),
     ] = None,
+    change_root: Annotated[
+        Path | None,
+        typer.Option(
+            help="Explicit OpenSpec-resolved change root for live runtime variables.",
+            rich_help_panel="Runtime",
+        ),
+    ] = None,
 ):
     """Resolve static guidance or execute a saved runtime trait group."""
     project_target = target(ctx, home, project)
@@ -96,10 +103,15 @@ def resolve(
                 "Runtime resolve requires --attach and --trait; use --context-file for inputs."
             )
         result = resolve_runtime(
-            project_target.root, resolution, attach, traits, json_file(context_file)
+            project_target.root,
+            resolution,
+            attach,
+            traits,
+            json_file(context_file),
+            change=change_root,
         )
     else:
-        if attach or traits or context_file:
+        if attach or traits or context_file or change_root:
             raise typer.BadParameter("Runtime arguments require --resolution.")
         bundle = project_target.prepare(values=json_file(vars_file))
         result = contributions(bundle, storage.digest(bundle))

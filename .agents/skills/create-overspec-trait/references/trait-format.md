@@ -105,3 +105,49 @@ completely, including omitted details. Duplicates within a layer are errors.
 sync; `--resolution ID` selects a historical bundle. Editing live source does not
 rewrite previously saved details. Runtime guidance likewise uses its saved bundle,
 even when current profile mode or selection changes.
+
+## Scoped variable inputs
+
+Use optional `[vars]` documents at `openspec/.over/.vars.toml` for committed
+defaults and `.current.toml` for ignored local overrides. Both filenames also
+work directly inside an explicitly selected OpenSpec `changeRoot`. Neither is
+a trait source. For example:
+
+```toml
+[vars]
+strict = true
+language = "Python"
+reviewers = ["maintainer", "peer"]
+"build.target" = "desktop"
+```
+
+Only finite scalars and lists of scalars are accepted; no dates, nested tables,
+nested lists, or other root fields. Lists override whole lists and cannot render
+into bodies. Dotted keys are literal. Missing files are empty layers; explicit
+JSON null remains supported.
+
+Static precedence is explicit `--vars-file` JSON over project current, persistent,
+project config vars, and user config vars. Change variables do not enter static
+sync. Changed inputs used by compiled bodies require update; ordinary bodies are
+fresh at sync. Runtime assertions remain runtime-only.
+
+Version-2 runtime precedence is `--context-file` JSON over selected-change current,
+selected-change persistent, project current, project persistent, and retained
+configured defaults. Files are reread for each invocation and feed both conditions
+and body rendering. Removing a layer does not restore its old captured values.
+Match is exact and typed; `$name` dereferencing is supported only for an includes
+list operand, not equality. No regex/glob/expression predicates are available.
+
+Get the exact change root using `openspec status --change <name> --json`, keeping
+the selected `--store`. Append `--change-root <path>` to the saved runtime command.
+Omitting it means project-only variables, not automatic active-change selection.
+External roots are allowed; missing/moved/redirected ones fail. Old version-1
+commands ignore variable files and keep invocation-only assertion semantics until
+resync. Details remain literal and readable even when live variable files fail.
+
+Use `overspec-bootstrap` for setup decisions: `overspec init` creates missing
+current files during first compilation; `overspec init --setup-only` handles later
+changes without recompilation. Init accepts either `--store <id>` for discovery
+or repeatable `--change-root <path>` for exact targets, never both. Setup never
+creates persistent files or untracks current files. Commit authored persistent
+files when their records are retained; keep current files local.
