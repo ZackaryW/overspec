@@ -50,7 +50,10 @@ implementation milestone and final post-archive commit work, use
 `zmem-author-commits`. Verify referenced skills are available; report a missing
 skill without inventing installation or copying its workflow here. Follow
 existing commit authorization; a trait reference alone is not authorization.
-Incremental implementation commits exclude OpenSpec lifecycle artifacts.
+Incremental implementation commits include all nonignored work except the active
+change's own `changeRoot` artifacts. Include `.over`, project config, tests,
+skills, canonical specs, and already archived records; do not exclude `openspec/`
+as a whole. Keep ignored generated state and `.current.toml` local.
 
 ## Before archive handling
 

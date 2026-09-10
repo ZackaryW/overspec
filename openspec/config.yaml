@@ -51,12 +51,14 @@ operations:
   archive:
     guidance:
       - | # over:zmem-archive
-        After archiving completes, invoke zmem-author-commits for the final implementation
-        and memory review. Exclude OpenSpec artifacts from any resulting commits.
+        Ask the user to choose: discard, archive normally, dissolve into zmem, or only form specs.
+        Wait for their answer before changing lifecycle artifacts. Commit OpenSpec artifacts
+        retained by the chosen outcome; use zmem-author-commits for the final review when available.
       - | # over:do-not-archive-openspec-change
         From this project's root, run:
-        overspec trait resolve --resolution a4ec33b6165fd33aab6a91741510868e489e13c7f7f03880e493bc9a2c5a12af --attach operations.archive.guidance --trait do-not-archive-openspec-change
+        overspec trait resolve --resolution 566965e2a94d2e1c96b7a37f815cac0b3f44312d6f4dc4a6527908e2555214a4 --attach operations.archive.guidance --trait do-not-archive-openspec-change
         Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
+        For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json (preserving the selected --store), then append --change-root <changeRoot> to this command. Without a selected change, use project variables only.
 context: |
   Use codegraph for current code structure and zmem for decisions and lessons.
   Before changing behavior, resolve the symbol with codegraph and recall zmem for
@@ -65,5 +67,6 @@ context: |
   <!-- over:require-zmem -->
 
   Invoke zmem-author-commits after each verified source implementation milestone
-  for implementation commits and durable memory, excluding OpenSpec artifacts.
+  for implementation commits and durable memory. Include .over, config, tests, and
+  all other nonignored work; exclude only the active change's own artifacts.
   <!-- over:zmem-commits -->

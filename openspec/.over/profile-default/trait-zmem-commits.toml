@@ -3,13 +3,19 @@ name = "zmem-commits"
 attach = "context"
 body = """
 Invoke zmem-author-commits after each verified source implementation milestone
-for implementation commits and durable memory, excluding OpenSpec artifacts.
+for implementation commits and durable memory. Include .over, config, tests, and
+all other nonignored work; exclude only the active change's own artifacts.
 """
 details = """
 A meaningful milestone is a coherent source implementation change whose checks
 have passed. OpenSpec-only changes do not count as implementation milestones.
-Exclude OpenSpec planning, specification, task, and archive artifacts from these
-commits.
+Exclude only the active change's own directory (the OpenSpec-resolved changeRoot),
+including its proposal, design, tasks, delta specs, and implementation reports.
+Include all other nonignored work: source, tests, .over trait/config files,
+openspec/config.yaml, skills, reports outside that change, canonical specs, and
+already archived records. Do not exclude the whole openspec tree. Generated state
+and .current.toml remain ignored. At the final outcome, handle that change's
+retained artifacts according to the user's explicit archive choice.
 
 Do not create an empty commit just to mark a milestone.
 
@@ -26,20 +32,33 @@ app = "zmem"
 name = "zmem-archive"
 attach = "operations.archive.guidance"
 body = """
-After archiving completes, invoke zmem-author-commits for the final implementation
-and memory review. Exclude OpenSpec artifacts from any resulting commits.
+Ask the user to choose: discard, archive normally, dissolve into zmem, or only form specs.
+Wait for their answer before changing lifecycle artifacts. Commit OpenSpec artifacts
+retained by the chosen outcome; use zmem-author-commits for the final review when available.
 """
 details = """
-Invoke the skill after successful archive completion, not before or after a
-skipped or failed archive. Review remaining implementation work and durable
-memory, following the workflow in zmem-author-commits.
+Present the four outcomes and their concrete effects for the selected change.
+An archive request alone does not select an outcome. Do not time out the question,
+infer a choice from tool availability, or repeat an already answered choice for
+the same operation. Runtime guidance does not substitute for the user's choice.
 
-Keep resulting commits scoped to implementation; exclude OpenSpec planning,
-specification, task, and archive artifacts. Do not create an empty commit merely
-to mark archive completion.
+- Discard: remove this change's planning records without promoting its delta specs;
+  preserve implementation work.
+- Archive normally: synchronize accepted delta specs and retain the completed
+  change in the archive. Include canonical specs and archive records in the final
+  commit; the incremental-commit exclusion no longer applies.
+- Dissolve into zmem: use zmem-author-commits to record and verify durable decisions
+  and lessons before removing this change's planning records. Do not promote delta
+  specs or retain an archive copy. If zmem or the skill is unavailable, report that
+  limitation and keep the records until the user chooses how to proceed.
+- Only form specs: synchronize accepted delta specs, then remove this change's
+  planning records without retaining an archive copy. Commit the resulting specs.
+
+If a change is already archived or its specs were already promoted, explain the
+existing state and the exact change-specific removals or reversals in the choice
+prompt. Preserve unrelated specs, changes, implementation, and user edits.
+
+After the selected outcome completes, perform the final implementation and memory
+review with zmem-author-commits when available. Its workflow stays in that skill.
+Do not create an empty commit merely to mark completion.
 """
-
-[trait.assert.1]
-[[trait.assert.1.assertion]]
-type = "which"
-app = "zmem"

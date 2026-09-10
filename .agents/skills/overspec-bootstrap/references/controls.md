@@ -110,6 +110,12 @@ discovery errors fail instead of being mistaken for no active changes.
 
 ## Archive decision examples
 
+During implementation, commit all nonignored work except the active change's
+resolved `changeRoot` directory. Its proposal, design, tasks, delta specs, and
+reports wait for final handling. `.over`, `openspec/config.yaml`, tests, skills,
+canonical specs, and previously archived records are included in incremental
+commits. This is not an exclusion of the entire OpenSpec directory.
+
 For the selected change, explain these effects and wait for the user's answer:
 
 | Explicit answer | Intended result to review before final handling |
