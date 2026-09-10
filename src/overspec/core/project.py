@@ -22,7 +22,7 @@ class Project:
             home or os.environ.get("OVERSPEC_HOME", Path.home() / ".overspec")
         ).resolve()
         self.over = self.root / "openspec/.over"
-        self.state = self.over / ".state"
+        self.state = self.root / storage.STATE_PATH
 
     def inventory(self):
         ConfinedPath("openspec/.over").inspect(self.root)
@@ -94,12 +94,10 @@ class Project:
         )
 
     def initialize(self, *, update=False, values=None):
-        if (
-            not update
-            and storage.read_bytes(self.root, "openspec/.over/.state/compiled.json")
-            is not None
-        ):
+        if not update and storage.has_compilation(self.root):
             raise ValueError("Compilation already exists; use update")
+        observed_state = storage.read_bytes(self.root, storage.STATE_PATH)
+        state = storage.read_state(self.root, missing_ok=True)
         variable_evidence = self.variable_evidence()
         traits, _, selection, base = self.inventory()
         inputs = variables(base, values or {})
@@ -128,19 +126,16 @@ class Project:
                 raise ValueError("Sources changed during compilation; retry update")
 
         recheck()
-        identity = storage.publish(self.root, "compilations", snapshot)
-        storage.atomic_write(
-            self.root,
-            "openspec/.over/.state/compiled.json",
-            storage.encoded({"id": identity}),
-            recheck=recheck,
-        )
-        return identity
+        state["compilation"] = storage.section(snapshot)
+        storage.save_state(self.root, state, expected=observed_state, recheck=recheck)
+        return state["compilation"]["id"]
 
     def prepare(self, *, values=None):
         traits, overridden, selection, base = self.inventory()
-        pointer = storage.read_json(self.root, "openspec/.over/.state/compiled.json")
-        compiled = storage.load_bundle(self.root, "compilations", pointer.get("id"))
+        saved = storage.read_state(self.root)["compilation"]
+        if saved is None:
+            raise ValueError("Missing compilation; run init/update")
+        compiled = saved["data"]
         if compiled.get("compatibility") != self.compatibility(traits, selection, base):
             raise ValueError(
                 "Compile-time sources, inputs, or profile changed; run update"
@@ -156,7 +151,7 @@ class Project:
             "version": 2,
             "root": str(self.root),
             "profile": selection,
-            "compilation": pointer["id"],
+            "compilation": saved["id"],
             "traits": [t.record() for t in traits],
             "overridden": [
                 {
@@ -172,7 +167,7 @@ class Project:
             "static": result,
         }
 
-    def evidence(self):
+    def evidence(self, *, config=True):
         """Observe inventory and publication inputs without reevaluating assertions."""
         selection, directory = select_profile(self.root, self.home)
         paths = (trait_files(directory) if directory else []) + trait_files(
@@ -180,9 +175,17 @@ class Project:
         )
         for root, relative in (
             (self.root, "openspec/.over/config.toml"),
-            (self.root, "openspec/.over/.state/compiled.json"),
-            (self.root, "openspec/config.yaml"),
-            (self.root, "openspec/config.yml"),
+            (self.root, storage.STATE_PATH),
+            *(
+                (
+                    [
+                        (self.root, "openspec/config.yaml"),
+                        (self.root, "openspec/config.yml"),
+                    ]
+                )
+                if config
+                else []
+            ),
         ):
             if storage.read_bytes(root, relative) is not None:
                 paths.append(root / relative)
@@ -191,9 +194,7 @@ class Project:
             and storage.read_bytes(self.home, "config.toml") is not None
         ):
             paths.append(self.home / "config.toml")
-        pointer = storage.read_json(self.root, "openspec/.over/.state/compiled.json")
-        storage.load_bundle(self.root, "compilations", pointer.get("id"))
-        paths.append(self.state / "compilations" / (pointer["id"] + ".json"))
+        storage.read_state(self.root)
         return (
             selection,
             str(directory),
@@ -207,6 +208,9 @@ class Project:
 
         path = config_target(self.root)
         before = self.evidence()
+        sources_before = self.evidence(config=False)
+        observed_state = storage.read_bytes(self.root, storage.STATE_PATH)
+        state = storage.read_state(self.root)
         original = path.read_bytes().decode("utf-8")
         bundle = self.prepare(values=values)
         identity = storage.digest(bundle)
@@ -236,7 +240,6 @@ class Project:
         recheck()
         if dry_run:
             return result
-        storage.publish(self.root, "resolutions", bundle)
         if changed:
             storage.atomic_write(
                 self.root,
@@ -247,19 +250,24 @@ class Project:
         else:
             recheck()
         receipt = {
-            "version": 1,
-            "root": str(self.root),
             "resolution": identity,
             "fingerprint": owned_fingerprint(candidate),
         }
+        state["resolution"] = storage.section(bundle)
+        state["sync"] = receipt
+
+        def recheck_saved():
+            if self.evidence(
+                config=False
+            ) != sources_before or path.read_bytes() != candidate.encode("utf-8"):
+                raise ValueError("Source or configuration changed during sync; retry")
+
         try:
-            storage.atomic_write(
-                self.root,
-                "openspec/.over/.state/last-sync.json",
-                storage.encoded(receipt),
+            storage.save_state(
+                self.root, state, expected=observed_state, recheck=recheck_saved
             )
         except (OSError, ValueError) as exc:
             raise ValueError(
-                "Sync receipt publication failed; configuration may already have changed. Retry sync."
+                f"Sync state publication failed; configuration may already have changed. Retry sync. {exc}"
             ) from exc
         return result

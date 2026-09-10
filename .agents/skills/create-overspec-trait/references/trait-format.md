@@ -102,7 +102,8 @@ Loose local traits outside profile trees then replace same-name declarations
 completely, including omitted details. Duplicates within a layer are errors.
 
 `overspec trait show NAME --details` reads details retained by the last successful
-sync; `--resolution ID` selects a historical bundle. Editing live source does not
+sync; `--resolution ID` must match the current snapshot in `.over/.state.json`.
+Superseded IDs fail; no historical generations are kept. Editing live source does not
 rewrite previously saved details. Runtime guidance likewise uses its saved bundle,
 even when current profile mode or selection changes.
 
@@ -141,9 +142,9 @@ list operand, not equality. No regex/glob/expression predicates are available.
 Get the exact change root using `openspec status --change <name> --json`, keeping
 the selected `--store`. Append `--change-root <path>` to the saved runtime command.
 Omitting it means project-only variables, not automatic active-change selection.
-External roots are allowed; missing/moved/redirected ones fail. Old version-1
-commands ignore variable files and keep invocation-only assertion semantics until
-resync. Details remain literal and readable even when live variable files fail.
+External roots are allowed; missing/moved/redirected ones fail. Legacy multi-file
+state requires explicit update then sync; old commands are not historical lookups.
+Details remain literal and readable even when live variable files fail.
 
 Use `overspec-bootstrap` for setup decisions: `overspec init` creates missing
 current files during first compilation; `overspec init --setup-only` handles later

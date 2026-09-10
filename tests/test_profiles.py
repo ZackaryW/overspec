@@ -124,7 +124,7 @@ def test_default_user_home_is_overspec_and_ignores_other_apps(tmp_path, monkeypa
     assert selection == ["default", str(trait.parent)]
     assert [t.name for t in effective] == ["shared"]
     assert project.over == root / "openspec/.over"
-    assert project.state == root / "openspec/.over/.state"
+    assert project.state == root / "openspec/.over/.state.json"
     toggle_profiles(project.home)
     use_profile(root, project.home, "default")
     import tomllib

@@ -10,7 +10,7 @@
 | Loose `trait*.toml` | Local declarations outside profile trees, layered over the chosen profile |
 | `.vars.toml` | Optional persistent variables, eligible for Git tracking |
 | `.current.toml` | Mutable local variables, initialized when missing and ignored by basename |
-| `.state` | Retained compilation/resolution bundles and sync receipt |
+| `.state.json` | One current compilation, synchronized resolution, and sync receipt |
 | OpenSpec `changeRoot` | Exact selected change directory, possibly outside the implementation repository |
 
 A trait has a short stable name and a compact, independently actionable `body`.
@@ -71,8 +71,13 @@ use the same final mapping. No `--change-root` means project scope only, with no
 automatic change selection. Missing/moved/redirected explicit roots fail.
 Retained defaults and definitions do not follow live profile/config edits.
 
-Version-1 bundles keep captured rendering variables and invocation-only runtime
-assertions; they ignore live variable files. Resync opts into version 2.
+Only the current synchronized resolution is retained in `.over/.state.json`.
+An explicit resolution ID guards that snapshot; superseded IDs fail. Legacy
+multi-file state is not loaded. Run `overspec init --setup-only` for new ignore
+coverage, then `overspec update`, preview, and sync to
+regenerate; remove the obsolete generated `.over/.state/` only after verification.
+Setup-only does not migrate compilation. If .state.json is corrupt, restore a
+valid copy or move it aside before explicit update/sync regeneration.
 `${key}` interpolates scalars only; `$$` is a literal dollar. Details stay literal
 and can be read with `overspec trait show <name> --details`, optionally with
 `--resolution <id>`, even when live variable files are malformed.

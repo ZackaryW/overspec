@@ -15,7 +15,7 @@ changes and artifacts; Overspec composes guidance into its configuration.
    In this checkout use `uv run overspec`. Preserve an explicitly selected
    OpenSpec store on list/status/instructions calls; do not infer one from folders.
 2. Inspect `openspec/config.yaml`, `.over` sources, and the compilation pointer at
-   `openspec/.over/.state/compiled.json`. Read
+   the compilation section in `openspec/.over/.state.json`. Read
    [references/controls.md](references/controls.md) for file scope, precedence,
    lifetimes, and troubleshooting. Explain that `.vars.toml` is optional shared
    data and `.current.toml` is local state before setting them up.

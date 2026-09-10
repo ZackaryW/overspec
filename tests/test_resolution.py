@@ -1,7 +1,6 @@
 import pytest
 
 from conftest import declaration, source
-from overspec.core import storage
 
 
 def test_runtime_resolution_uses_retained_bundle_and_context(project):
@@ -23,8 +22,8 @@ def test_runtime_resolution_uses_retained_bundle_and_context(project):
     )
     project.initialize()
     bundle = project.prepare()
-    identity = storage.publish(project.root, "resolutions", bundle)
-    assert identity == storage.publish(project.root, "resolutions", project.prepare())
+    identity = project.sync()["resolution"]
+    assert identity == project.sync()["resolution"]
     output = contributions(bundle, identity)
     assert len(output) == 2
     assert output[1]["body"].count("overspec trait resolve") == 1
@@ -62,7 +61,7 @@ def test_runtime_resolution_uses_retained_bundle_and_context(project):
         resolve_runtime(
             project.root, identity, "operations.archive.guidance", ["unknown"], {}
         )
-    path = project.state / "resolutions" / (identity + ".json")
+    path = project.state
     path.write_text("{}")
     with pytest.raises(ValueError, match="Corrupt"):
         resolve_runtime(
@@ -86,7 +85,7 @@ def test_runtime_dependencies_evaluate_group_but_only_requested_emit(project):
         ),
     )
     project.initialize()
-    identity = storage.publish(project.root, "resolutions", project.prepare())
+    identity = project.sync()["resolution"]
     assert [
         x["name"] for x in resolve_runtime(project.root, identity, "context", ["b"], {})
     ] == ["b"]

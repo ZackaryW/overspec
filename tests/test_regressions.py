@@ -1,3 +1,4 @@
+from overspec.core import storage
 import shutil
 
 import pytest
@@ -59,7 +60,7 @@ def test_runtime_bundle_rejects_copy_to_another_root(project, tmp_path):
     identity = project.sync()["resolution"]
     other = tmp_path / "other"
     shutil.copytree(project.root, other)
-    with pytest.raises(ValueError, match="root-mismatched"):
+    with pytest.raises(ValueError, match="root mismatch"):
         resolve_runtime(other, identity, "context", ["a"], {})
     with pytest.raises(ValueError):
         show_details(other, "a")
@@ -80,15 +81,14 @@ def test_detect_config_change_after_bundle_publication(project, monkeypatch):
 
     source(project, declaration("a"))
     project.initialize()
-    publish = storage.publish
+    publish = storage.atomic_write
     config = project.root / "openspec/config.yaml"
 
-    def intervene(*args):
-        result = publish(*args)
+    def intervene(*args, **kwargs):
         config.write_text("schema: intervening\n")
-        return result
+        return publish(*args, **kwargs)
 
-    monkeypatch.setattr(storage, "publish", intervene)
+    monkeypatch.setattr(storage, "atomic_write", intervene)
     with pytest.raises(ValueError, match="changed"):
         project.sync()
     assert config.read_text() == "schema: intervening\n"
@@ -120,19 +120,18 @@ def test_compilation_rechecks_sources_after_generation_publish(project, monkeypa
 
     path = source(project, declaration("a", "compiletime-trait"))
     project.initialize()
-    pointer = (project.state / "compiled.json").read_bytes()
+    pointer = storage.read_state(project.root)["compilation"]
     path.write_text(declaration("a", "compiletime-trait", body="second"))
-    publish = storage.publish
+    publish = storage.atomic_write
 
-    def intervene(*args):
-        result = publish(*args)
+    def intervene(*args, **kwargs):
         path.write_text(declaration("a", "compiletime-trait", body="third"))
-        return result
+        return publish(*args, **kwargs)
 
-    monkeypatch.setattr(storage, "publish", intervene)
+    monkeypatch.setattr(storage, "atomic_write", intervene)
     with pytest.raises(ValueError, match="changed"):
         project.initialize(update=True)
-    assert (project.state / "compiled.json").read_bytes() == pointer
+    assert storage.read_state(project.root)["compilation"] == pointer
 
 
 def test_false_and_zero_owned_values_are_not_a_noop():
@@ -188,7 +187,7 @@ def test_suppressed_ordinary_does_not_mutate_compilation(project):
 
     source(project, declaration("a", "compiletime-trait"))
     project.initialize()
-    pointer = (project.state / "compiled.json").read_bytes()
+    pointer = storage.read_state(project.root)["compilation"]
     override = source(
         project,
         declaration("b", **{"actions": [{"type": "remove-trait", "trait": "a"}]}),
@@ -203,7 +202,7 @@ def test_suppressed_ordinary_does_not_mutate_compilation(project):
     override.unlink()
     bundle = project.prepare()
     assert [x["name"] for x in contributions(bundle, digest(bundle))] == ["a"]
-    assert (project.state / "compiled.json").read_bytes() == pointer
+    assert storage.read_state(project.root)["compilation"] == pointer
 
 
 def test_two_runtime_destinations_produce_separate_commands(project):

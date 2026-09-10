@@ -1,3 +1,4 @@
+from overspec.core import storage
 import json
 
 from typer.testing import CliRunner
@@ -15,7 +16,7 @@ def invoke(project, *args):
 def test_cli_setup_only_preserves_state_and_normal_init_preflight(project, tmp_path):
     selected = change(tmp_path / "one")
     project.initialize()
-    before = (project.state / "compiled.json").read_bytes()
+    before = storage.read_state(project.root)["compilation"]
     config = (project.root / "openspec/config.yaml").read_bytes()
     result = invoke(project, "init", "--change-root", str(selected))
     assert result.exit_code != 0 and "already exists" in result.output
@@ -25,7 +26,7 @@ def test_cli_setup_only_preserves_state_and_normal_init_preflight(project, tmp_p
     )
     assert result.exit_code == 0, result.output
     assert json.loads(result.stdout)["setup"]["success"]
-    assert (project.state / "compiled.json").read_bytes() == before
+    assert storage.read_state(project.root)["compilation"] == before
     assert (project.root / "openspec/config.yaml").read_bytes() == config
     assert not project.home.exists()
     assert (selected / ".current.toml").is_file()

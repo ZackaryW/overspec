@@ -45,10 +45,8 @@ def test_sync_preview_noop_and_details_history(project):
     changed = project.sync()
     assert not changed["changed"] and config.stat().st_mtime_ns == mtime
     assert show_details(project.root, "tdd")["details"] == "New"
-    assert (
-        show_details(project.root, "tdd", result["resolution"])["details"]
-        == "Long ${literal} details"
-    )
+    with pytest.raises(ValueError, match="Stale"):
+        show_details(project.root, "tdd", result["resolution"])
     config.write_text(config.read_text() + "custom: preserved\n")
     assert show_details(project.root, "tdd")["details"] == "New"
     config.write_text(config.read_text().replace("# over:tdd", "# over:wrong"))
@@ -100,7 +98,7 @@ def test_failed_replace_keeps_config_and_cleans_temporary_file(project, monkeypa
     with pytest.raises(OSError):
         project.sync()
     assert (project.root / "openspec/config.yaml").read_bytes() == before
-    assert list((project.state / "resolutions").glob("*.json"))
+    assert storage.read_state(project.root)["resolution"] is None
     assert not list((project.root / "openspec").glob(".over-*"))
 
 
@@ -112,7 +110,7 @@ def test_receipt_failure_reports_partial_outcome_and_retry(project, monkeypatch)
     replace = storage.os.replace
 
     def fail_receipt(src, dst):
-        if str(dst).endswith("last-sync.json"):
+        if str(dst).endswith(".state.json"):
             raise OSError("injected receipt failure")
         return replace(src, dst)
 
@@ -128,14 +126,13 @@ def test_intervening_source_or_config_edit_aborts(project, monkeypatch):
 
     path = source(project, declaration("a"))
     project.initialize()
-    publish = storage.publish
+    publish = storage.atomic_write
 
-    def intervene(*args):
-        result = publish(*args)
+    def intervene(*args, **kwargs):
         path.write_text(declaration("a", body="intervening"))
-        return result
+        return publish(*args, **kwargs)
 
-    monkeypatch.setattr(storage, "publish", intervene)
+    monkeypatch.setattr(storage, "atomic_write", intervene)
     before = (project.root / "openspec/config.yaml").read_bytes()
     with pytest.raises(ValueError, match="changed"):
         project.sync()

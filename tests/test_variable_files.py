@@ -97,20 +97,19 @@ def test_variable_publication_race_preserves_pointers(
     if mutation != "add":
         path.write_text("[vars]\nx=1")
     project.initialize()
-    pointer = project.state / "compiled.json"
+    pointer = project.state
     config = project.root / "openspec/config.yaml"
     before = pointer.read_bytes(), config.read_bytes()
-    publish = storage.publish
+    publish = storage.atomic_write
 
-    def intervene(*args):
-        identity = publish(*args)
+    def intervene(*args, **kwargs):
         if mutation == "remove":
             path.unlink()
         else:
             path.write_text("[vars]\nx=2")
-        return identity
+        return publish(*args, **kwargs)
 
-    monkeypatch.setattr(storage, "publish", intervene)
+    monkeypatch.setattr(storage, "atomic_write", intervene)
     with pytest.raises(ValueError, match="changed"):
         project.initialize(update=True) if operation == "compile" else project.sync()
     assert (pointer.read_bytes(), config.read_bytes()) == before

@@ -182,4 +182,5 @@ cython_debug/
 
 # Project-bound generated trait resolutions
 openspec/.over/.state/
+openspec/.over/.state.json
 .current.toml

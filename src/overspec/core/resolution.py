@@ -66,17 +66,13 @@ def resolve_runtime(root, identity, attach, names, context=None, *, change=None)
         raise ValueError(
             "Unknown or duplicate runtime trait IDs or mismatched attachment"
         )
-    if bundle["version"] == 1:
-        values = {**bundle["variables"], **(context or {})}
-        runtime = context
-    else:
-        values = variables(
-            bundle["runtime_defaults"],
-            *file_layers(root, "openspec/.over/"),
-            *(file_layers(selected) if selected is not None else []),
-            context or {},
-        )
-        runtime = values
+    values = variables(
+        bundle["runtime_defaults"],
+        *file_layers(root, "openspec/.over/"),
+        *(file_layers(selected) if selected is not None else []),
+        context or {},
+    )
+    runtime = values
     state = evaluate(
         group, root, prior=bundle["static"], values=values, runtime=runtime
     )
@@ -125,9 +121,9 @@ def show_details(root, name, identity=None):
     from .projection import config_target, owned_fingerprint
 
     if identity is None:
-        receipt = storage.read_json(root, "openspec/.over/.state/last-sync.json")
-        if receipt.get("root") != str(root) or receipt.get("version") != 1:
-            raise ValueError("Invalid sync receipt; resync")
+        receipt = storage.read_state(root)["sync"]
+        if receipt is None:
+            raise ValueError("Missing successful sync; run sync")
         current = owned_fingerprint(config_target(root).read_text(encoding="utf-8"))
         if current != receipt.get("fingerprint"):
             raise ValueError(

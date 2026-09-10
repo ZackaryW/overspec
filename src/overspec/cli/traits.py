@@ -40,7 +40,7 @@ ResolutionOption = Annotated[
     str | None,
     typer.Option(
         "--resolution",
-        help="Saved resolution ID; never resolve against live profiles.",
+        help="Current saved resolution ID; superseded IDs fail without loading history.",
         rich_help_panel="Saved resolution",
     ),
 ]
@@ -171,7 +171,7 @@ def show(
     project: ProjectOption = None,
     json_output: JsonOption = False,
 ):
-    """Read literal details from the last successful sync or a historical ID."""
+    """Read last-synced literal details; an explicit ID must match current state."""
     if not details:
         raise typer.BadParameter("Use --details to read the saved explanation.")
     result = show_details(target(ctx, home, project).root, name, resolution)

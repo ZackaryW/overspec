@@ -1,3 +1,4 @@
+from overspec.core import storage
 import pytest
 
 from conftest import declaration, source
@@ -72,11 +73,10 @@ def test_empty_compilation_and_readonly_preparation(project):
 
 
 def test_compilation_publication_failure_preserves_previous(project, monkeypatch):
-    import overspec.core.storage as storage
 
     source(project, declaration("a", "compiletime-trait"))
     project.initialize()
-    before = (project.state / "compiled.json").read_bytes()
+    before = storage.read_state(project.root)["compilation"]
 
     def fail(*args):
         raise OSError("injected replace failure")
@@ -85,4 +85,4 @@ def test_compilation_publication_failure_preserves_previous(project, monkeypatch
     source(project, declaration("a", "compiletime-trait", body="changed"))
     with pytest.raises(OSError):
         project.initialize(update=True, values={"extra": "changed"})
-    assert (project.state / "compiled.json").read_bytes() == before
+    assert storage.read_state(project.root)["compilation"] == before

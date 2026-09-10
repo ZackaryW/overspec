@@ -1,9 +1,7 @@
-from copy import deepcopy
-
+from overspec.core import storage
 import pytest
 from conftest import declaration, source
 
-from overspec.core import storage
 from overspec.core.resolution import resolve_runtime
 
 
@@ -70,7 +68,7 @@ def test_groups_keep_phase_lifetimes_and_retained_runtime_sources(project, monke
     ] == ["runtime"]
     assert resolve_runtime(project.root, first, "context", ["runtime"], {}) == []
 
-    pointer = (project.state / "compiled.json").read_bytes()
+    pointer = storage.read_state(project.root)["compilation"]
     ordinary.write_text(
         declaration(
             "ordinary",
@@ -82,7 +80,7 @@ def test_groups_keep_phase_lifetimes_and_retained_runtime_sources(project, monke
         resolve_runtime(project.root, second, "context", ["runtime"], {"flag": True})
         == []
     )
-    assert (project.state / "compiled.json").read_bytes() == pointer
+    assert storage.read_state(project.root)["compilation"] == pointer
     project.initialize(update=True)
     assert project.prepare()["static"]["matched"] == ["compiled", "ordinary"]
     # A compile-time condition edit requires deliberate recompilation.
@@ -97,16 +95,16 @@ def test_groups_keep_phase_lifetimes_and_retained_runtime_sources(project, monke
         for p in project.root.rglob("*")
         if p.is_file()
     }
+    with pytest.raises(ValueError, match="Stale"):
+        resolve_runtime(project.root, first, "context", ["runtime"], {"flag": True})
     assert (
-        resolve_runtime(project.root, first, "context", ["runtime"], {"flag": True})[0][
-            "body"
-        ]
-        == "runtime"
+        resolve_runtime(project.root, second, "context", ["runtime"], {"flag": True})
+        == []
     )
     assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in before}
 
 
-def test_version_one_legacy_bundle_stays_readable_after_grouped_sync(project):
+def test_flat_conditions_work_until_grouped_sync_replaces_current_id(project):
     legacy = [
         {"type": "runtime-context-match", "kv": "flag=true"},
         {"type": "~runtime-context-match", "kv": "blocked=true"},
@@ -118,20 +116,19 @@ def test_version_one_legacy_bundle_stays_readable_after_grouped_sync(project):
         ),
     )
     project.initialize()
-    bundle = deepcopy(project.prepare())
-    bundle["version"] = 1
-    bundle.pop("runtime_defaults", None)
-    for decision in bundle["static"]["decisions"].values():
-        decision.pop("condition", None)
-    old = storage.publish(project.root, "resolutions", bundle)
+    old = project.sync()["resolution"]
+    assert resolve_runtime(
+        project.root, old, "context", ["runtime"], {"flag": True, "blocked": True}
+    )
     path.write_text(
         declaration("runtime", "runtime-trait", **{"assert": {"1": group(*legacy)}})
     )
     new = project.sync()["resolution"]
     assert old != new
-    assert resolve_runtime(
-        project.root, old, "context", ["runtime"], {"flag": True, "blocked": True}
-    )
+    with pytest.raises(ValueError, match="Stale"):
+        resolve_runtime(
+            project.root, old, "context", ["runtime"], {"flag": True, "blocked": True}
+        )
     assert not resolve_runtime(
         project.root, new, "context", ["runtime"], {"flag": True, "blocked": True}
     )

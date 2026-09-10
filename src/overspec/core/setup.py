@@ -14,6 +14,7 @@ from zuu.case5 import ConfinedPath, TargetState
 
 from .change_scope import change_root
 from .variables import load_variables
+from .storage import STATE_PATH
 
 CURRENT = b"# Local mutable variables; intentionally ignored by Git.\n[vars]\n"
 
@@ -65,6 +66,9 @@ def git_flag(root, arguments):
 
 def setup_variables(root, changes):
     root = Path(root)
+    ConfinedPath(STATE_PATH).inspect(
+        root, allowed=(TargetState.FILE, TargetState.ABSENT)
+    )
     targets = [(root, "openspec/.over/.current.toml")]
     targets += [(change_root(path), ".current.toml") for path in changes]
     targets = list(dict.fromkeys(targets))
@@ -99,6 +103,10 @@ def setup_variables(root, changes):
                 )
                 changed = apply_gitignore(plan)
                 verify_gitignore(plan)
+                if any(owner == root for owner, _, _ in entries):
+                    state_plan = plan_gitignore(worktree, [root / STATE_PATH])
+                    changed = apply_gitignore(state_plan) or changed
+                    verify_gitignore(state_plan)
                 report["worktrees"].append(
                     {"path": str(worktree), "changed": changed, "ignore": "verified"}
                 )

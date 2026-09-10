@@ -1,7 +1,7 @@
+from overspec.core import storage
 import pytest
 from conftest import declaration, source
 
-from overspec.core import storage
 from overspec.core.profiles import toggle_profiles, use_profile
 from overspec.core.resolution import resolve_runtime, show_details
 
@@ -23,7 +23,7 @@ def test_toggle_same_default_and_named_profile_lifetimes(project, monkeypatch):
     saved = project.sync()["resolution"]
     toggle_profiles(project.home)
     monkeypatch.setenv("OVERSPEC_PROFILE", "missing")
-    before = {p: p.read_bytes() for p in project.state.rglob("*") if p.is_file()}
+    before = {project.state: project.state.read_bytes()}
     assert (
         resolve_runtime(project.root, saved, "context", ["team"])[0]["name"] == "team"
     )
@@ -44,22 +44,21 @@ def test_effective_selection_races_abort_publication(
     use_profile(project.root, project.home, "team")
     project.initialize()
     project.sync()
-    pointer = (project.state / "compiled.json").read_bytes()
+    pointer = storage.read_state(project.root)["compilation"]
     config = (project.root / "openspec/config.yaml").read_bytes()
-    publish = storage.publish
+    publish = storage.atomic_write
 
-    def intervene(root, namespace, value):
-        result = publish(root, namespace, value)
+    def intervene(*args, **kwargs):
         if change == "environment":
             monkeypatch.setenv("OVERSPEC_PROFILE", "strict")
         elif change == "toggle":
             toggle_profiles(project.home)
         else:
             use_profile(project.root, project.home, "strict")
-        return result
+        return publish(*args, **kwargs)
 
-    monkeypatch.setattr(storage, "publish", intervene)
+    monkeypatch.setattr(storage, "atomic_write", intervene)
     with pytest.raises(ValueError, match="changed"):
         project.initialize(update=True) if operation == "compile" else project.sync()
-    assert (project.state / "compiled.json").read_bytes() == pointer
+    assert storage.read_state(project.root)["compilation"] == pointer
     assert (project.root / "openspec/config.yaml").read_bytes() == config

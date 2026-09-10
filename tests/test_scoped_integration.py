@@ -1,3 +1,4 @@
+from overspec.core import storage
 import json
 import re
 import shlex
@@ -66,7 +67,7 @@ def test_bootstrap_with_real_openspec_and_two_changes(
     openspec("new", "change", "one", *suffix)
     first = invoke(project, "init", *suffix, "--json")
     assert first.exit_code == 0, first.output
-    pointer = (project.state / "compiled.json").read_bytes()
+    pointer = storage.read_state(project.root)["compilation"]
     one = Path(
         json.loads(openspec("status", "--change", "one", "--json", *suffix))[
             "changeRoot"
@@ -84,7 +85,7 @@ def test_bootstrap_with_real_openspec_and_two_changes(
         project, "init", "--setup-only", "--change-root", str(two), "--json"
     )
     assert result.exit_code == 0, result.output
-    assert (project.state / "compiled.json").read_bytes() == pointer
+    assert storage.read_state(project.root)["compilation"] == pointer
     assert profiles_enabled(project.home) is enabled
     for root, language in [(one, "one"), (two, "two")]:
         assert (root / ".current.toml").exists()

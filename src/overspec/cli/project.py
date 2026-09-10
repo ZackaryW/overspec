@@ -80,11 +80,7 @@ def initialize(
     if setup_only and vars_file:
         raise typer.BadParameter("--vars-file does not apply to --setup-only")
     owner = target(ctx, home, project)
-    if (
-        not setup_only
-        and storage.read_bytes(owner.root, "openspec/.over/.state/compiled.json")
-        is not None
-    ):
+    if not setup_only and storage.has_compilation(owner.root):
         raise ValueError("Compilation already exists; use update or init --setup-only")
     values = json_file(vars_file)
     roots = change_roots if change_roots else discover_changes(owner.root, store=store)

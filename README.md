@@ -339,9 +339,8 @@ dereference variables. No regex, glob, or expression matching is added.
 Append `--change-root <path>` from OpenSpec status to the emitted runtime command
 for a selected change. The shared config contains no fixed change path or values.
 Without selection only project layers apply. An invalid, moved, or redirected root
-fails rather than falling back to another change. Version-1 commands retain captured
-rendering variables and invocation-only assertions, ignoring these live files;
-resync deliberately adopts version 2. Invocations do not share context. Returned
+fails rather than falling back to another change. Only the currently synchronized
+resolution is available; superseded IDs fail. Invocations do not share context. Returned
 matched, unsuppressed bodies have individual name markers. Runtime resolution uses
 the saved group and its history, runs offline, and writes no state. It does not
 advance, block, or archive OpenSpec changes.
@@ -349,29 +348,47 @@ advance, block, or archive OpenSpec changes.
 ```sh
 overspec trait resolve --explain
 overspec trait show tdd --details
-overspec trait show tdd --details --resolution <older-id>
+overspec trait show tdd --details --resolution <current-id>
 ```
 
 `resolve --explain` shows the group tree, condition paths, operators, evaluated
 reasons, and skipped branches. Add `--json` for structured traces. Migrating a
 compile-time declaration to grouped tables requires `overspec update` before
 sync; ordinary/runtime migrations need only sync. Previously synchronized runtime
-commands retain their original conditions and remain usable.
+commands retain their original conditions until sync replaces the current snapshot.
 
 Default detail lookup uses the last successful sync receipt and verifies owned
 config values and markers. Editing the active profile after sync does not change
-the saved explanation. Edited owned config requires resync or an explicit historical
+the saved explanation. Edited owned config requires resync or an explicit current
 ID; unowned edits do not invalidate the receipt. Lookup reports origin and phase,
 does not reevaluate conditions or read live variable files, and returns an explicit
 message if details are absent. Malformed current files do not prevent saved lookup.
 
-State lives in `openspec/.over/.state/`. Bundles are immutable, content-addressed,
-and bound to the project root. Keep the matching state to execute retained runtime
-commands; copied config in another project needs that project's own init/sync.
-Garbage collection is not implemented. Bundle publication precedes config replacement;
-the receipt follows it. A receipt failure reports that config may already have changed
-and can be retried. Use a single writer: atomic config replacement is not a multi-file
-transaction or cross-process lock.
+State lives in one ignored `openspec/.over/.state.json`:
+
+- `compilation` contains frozen results and inputs; init/update replace this section.
+- `resolution` contains the currently synchronized definitions, static results,
+  defaults, and literal details; sync replaces this section.
+- `sync` identifies the resolution and fingerprints its generated guidance.
+
+The document is root-bound and section hashes validate its content. Hashes are
+identifiers, not generation filenames. Repeated equivalent writes preserve bytes
+and modification time. State size follows current inputs, not the number of syncs;
+no performance speedup is implied. Update preserves the current resolution until
+sync, and runtime still reads variable files afresh. Copied state in another root
+fails validation and needs that project's own init/sync.
+
+Sync writes config before atomically saving the new resolution and receipt together.
+If the state write fails, the previous state survives and the error explains that
+config may have changed; retry sync. Default details verify the config fingerprint.
+Use a single writer: these two replacements are not a cross-file transaction or lock.
+
+For older installations containing `.over/.state/`, run `overspec init --setup-only`
+to establish ignore coverage for the new file, then `overspec update`, inspect
+`overspec sync --dry-run`, then `overspec sync`. This rebuilds current results; it
+does not import old generations. After verifying runtime/details, remove only the
+obsolete generated `.over/.state/` directory. Historical IDs no longer select old
+data. A corrupt .state.json must be restored or moved aside before regeneration.
 
 ## Remote profiles
 

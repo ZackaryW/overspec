@@ -66,13 +66,19 @@ def test_v2_format_namespace_and_root_validation(project, tmp_path):
     assert bundle["version"] == 2 and bundle["runtime_defaults"] == {}
     assert identity == storage.digest(project.prepare())
     assert "ephemeral" not in str(bundle["runtime_defaults"])
-    wrong_namespace = storage.publish(project.root, "compilations", bundle)
+    state = storage.read_state(project.root)
+    compiled = state["compilation"]
+    state["compilation"] = storage.section(bundle)
+    project.state.write_bytes(storage.encoded(state))
     with pytest.raises(ValueError, match="Corrupt"):
-        storage.load_bundle(project.root, "compilations", wrong_namespace)
+        storage.load_bundle(project.root, "compilations", identity)
     bundle["root"] = str(tmp_path)
-    wrong_root = storage.publish(project.root, "resolutions", bundle)
+    state["compilation"] = compiled
+    state["root"] = str(tmp_path)
+    state["resolution"] = storage.section(bundle)
+    project.state.write_bytes(storage.encoded(state))
     with pytest.raises(ValueError, match="root"):
-        storage.load_bundle(project.root, "resolutions", wrong_root)
+        storage.load_bundle(project.root, "resolutions", identity)
 
 
 def test_matching_and_rendering_share_live_mapping(project, tmp_path):
@@ -126,23 +132,18 @@ def test_scope_isolation_invalid_moved_and_metadata(project, tmp_path):
     assert body(project, identity, change=moved) == "one"
 
 
-def test_legacy_invocation_only_and_captured_rendering(project, tmp_path):
-    source(project, '[vars]\nx="captured"\nflag=true', ".current.toml")
-    identity = runtime(
-        project, **{"assert": [{"type": "runtime-context-match", "kv": "flag=true"}]}
-    )
-    bundle = storage.load_bundle(project.root, "resolutions", identity)
+def test_legacy_resolution_data_requires_regeneration(project):
+    identity = runtime(project)
+    state = storage.read_state(project.root)
+    bundle = state["resolution"]["data"]
     bundle["version"] = 1
-    bundle.pop("runtime_defaults", None)
-    old = storage.publish(project.root, "resolutions", bundle)
-    selected = change(tmp_path / "one")
-    selected.joinpath(".current.toml").write_text("invalid")
-    source(project, "invalid", ".current.toml")
-    assert resolve_runtime(project.root, old, "context", ["r"]) == []
-    assert body(project, old, context={"flag": True}, change=selected) == "captured"
-    assert body(project, old, context={"flag": True, "x": "explicit"}) == "explicit"
-    with pytest.raises(ValueError, match="TOML"):
-        body(project, identity, context={"flag": True})
+    bundle.pop("runtime_defaults")
+    state["resolution"] = storage.section(bundle)
+    project.state.write_bytes(storage.encoded(state))
+    before = project.state.read_bytes()
+    with pytest.raises(ValueError, match="Corrupt"):
+        body(project, identity, context={"x": "explicit"})
+    assert project.state.read_bytes() == before
 
 
 def test_runtime_cli_projection_and_details_are_readonly(project, tmp_path):
