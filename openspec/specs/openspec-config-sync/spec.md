@@ -145,7 +145,15 @@ Overspec SHALL identify each emitted static contribution using only its resolved
 
 For each nonempty runtime group identified by resolution and exact attachment, synchronization SHALL emit exactly one instruction to run `overspec trait resolve` with that resolution reference and all unique trait names in deterministic order. It SHALL not emit one command per trait or unconditionally emit their runtime bodies. Different attachment points SHALL remain separate groups. The group SHALL occupy the first runtime trait's position in that destination's output order. Repeated sync SHALL replace stale groups and names without accumulating commands.
 
-The resolution reference SHALL identify a retained, immutable bundle containing the effective declarations of all three types, their optional details, retained static results, and resolved earlier-phase context. Runtime definitions SHALL remain unevaluated. It SHALL bind the command to its owning OpenSpec root and attachment. It SHALL not contain a profile prefix in trait IDs. A missing, corrupt, or mismatched bundle SHALL fail with resync guidance rather than resolve against a different current profile. Sync SHALL publish required bundles before committing a config that references them.
+The resolution reference SHALL identify a current resolution snapshot in the single state document containing the effective declarations of all three types, their optional details, retained static results, and resolved earlier-phase context. Runtime definitions SHALL remain unevaluated. It SHALL bind the command to its owning OpenSpec root and attachment. It SHALL not contain a profile prefix in trait IDs. A missing, corrupt, or mismatched bundle SHALL fail with resync guidance rather than resolve against a different current profile. Sync SHALL save the current resolution and receipt together after configuration replacement or no-op verification. Superseded IDs SHALL fail explicitly; they SHALL never load history or live profile definitions. Fresh project/change variable layers SHALL continue to feed current runtime matching and rendering.
+
+Current resolutions SHALL retain configured runtime defaults separately from live
+variable-file layers. Their instructions SHALL direct the caller to append
+--change-root using the selected OpenSpec change root when applicable, without
+embedding one change's path or values in shared config. Saved detail lookup SHALL
+remain bound to current stored literal details and SHALL not load runtime variable
+files. Unsupported legacy resolution formats SHALL require regeneration through
+update and sync rather than silently adopting different input semantics.
 
 #### Scenario: Two runtime traits at the same point
 - **WHEN** two runtime traits attach to archive guidance in the same resolution
@@ -165,13 +173,25 @@ The resolution reference SHALL identify a retained, immutable bundle containing 
 
 #### Scenario: Grouped source migration preserves retained commands
 - **WHEN** live traits migrate from flat assertions to nested groups and a new resolution is synchronized
-- **THEN** new bundles retain their grouped declarations, old version-1 bundles with flat declarations remain readable with their original conditions, and each resolution still emits one unique runtime command per attachment
+- **THEN** the current snapshot retains grouped declarations and emits one unique runtime command per attachment; commands with superseded IDs fail
+
+#### Scenario: Change selection remains invocation-specific
+- **WHEN** a shared config is synchronized while several changes are active
+- **THEN** its bundled instructions contain no selected change's path or variable values and direct the caller to supply its current scope
+
+#### Scenario: Old resolution after variable files are introduced
+- **WHEN** a version-1 command is invoked after project or change variable files are created
+- **THEN** resolution fails with regeneration guidance instead of loading legacy history or reinterpreting that command using the files
+
+#### Scenario: Details do not depend on current files
+- **WHEN** current variable files are malformed or missing during saved detail lookup
+- **THEN** lookup returns the current stored literal details without attempting to load those files
 
 ### Requirement: Retain successful synchronization for detail lookup
 
-Every successful sync SHALL retain a root-bound content-addressed resolution, including static-only or empty inventories, and report its identifier. After configuration commit or verification of an unchanged candidate, it SHALL atomically publish a latest-success receipt linking the resolution to a fingerprint of the owned values and required source markers. Default detail lookup SHALL verify that receipt against the current owned configuration; a mismatch SHALL require resync or an explicit historical resolution. Unowned configuration edits SHALL not invalidate the receipt. Preview SHALL publish neither bundle nor receipt.
+Every successful sync SHALL retain only the current root-bound content-identified resolution in .state.json, including static-only or empty inventories, and report its identifier. After configuration commit or verification of an unchanged candidate, it SHALL atomically publish the current resolution and latest-success receipt together in the state file linking the resolution to a fingerprint of the owned values and required source markers. Default detail lookup SHALL verify that receipt against the current owned configuration; a mismatch SHALL require resync or the explicit current resolution ID. Unowned configuration edits SHALL not invalidate the receipt. Preview SHALL publish neither bundle nor receipt.
 
-Receipt publication failure SHALL return non-success and explain that configuration may already have been committed; it SHALL not claim a multi-file transaction. Any usable default lookup SHALL still validate the receipt and return the version it identifies. Explicit historical lookup SHALL validate its bundle independently of the current configuration. Identical state SHALL be reused.
+Receipt publication failure SHALL return non-success and explain that configuration may already have been committed; it SHALL not claim a multi-file transaction. Any usable default lookup SHALL still validate the receipt and return the version it identifies. An explicit ID SHALL match the current stored resolution and validate its hash independently of the current configuration; superseded IDs SHALL fail. Identical state SHALL be reused.
 
 #### Scenario: Static-only details change
 - **WHEN** an ordinary trait's details change in a project with no runtime groups and its rendered bodies remain unchanged
@@ -183,13 +203,13 @@ Receipt publication failure SHALL return non-success and explain that configurat
 
 #### Scenario: Receipt publication fails after replacement
 - **WHEN** configuration replacement succeeds but publishing the latest-success receipt fails
-- **THEN** sync reports the partial outcome, retains the valid resolution bundle, and a retry can complete publication
+- **THEN** sync reports the partial outcome, preserves the previous state document, and a retry can complete publication
 
 ### Requirement: Runtime command evaluates invocation context
 
-The runtime command SHALL evaluate requested runtime traits and their same-group runtime dependencies using the recorded resolution and explicit invocation context, returning only matched unsuppressed bodies for that attachment with name-only provenance. It SHALL accept a JSON context file, treat runtime context match as exact typed equality, and treat includes as exact membership rather than substring matching. The sketch's `kv = "do-not-archive=true"` SHALL compare against boolean true. An includes operand `$activeChanges` SHALL refer to a caller-supplied list and match when the target list overlaps it. Absent context keys, equality type mismatches, and non-list membership targets SHALL make the predicate false, allowing the sketch's boolean-or-list alternatives. Malformed context input or missing/invalid referenced variables needed for an otherwise applicable membership evaluation SHALL report an error. Missing context SHALL be treated as an empty mapping, not inherited from another invocation.
+The runtime command SHALL evaluate requested runtime traits and their same-group runtime dependencies using the current stored resolution, returning only matched unsuppressed bodies for that attachment with name-only provenance. It SHALL accept a JSON context file, treat runtime context match as exact typed equality, and treat includes as exact membership rather than substring matching. The sketch's `kv = "do-not-archive=true"` SHALL compare against boolean true. Runtime assertions and body interpolation SHALL share effective variables from retained defaults, project/change variable files, and explicit invocation JSON according to scoped-variable-files precedence. An includes operand `$activeChanges` SHALL refer to a list supplied by those effective inputs and match when the target list overlaps it. Absent effective keys, equality type mismatches, and non-list membership targets SHALL make the predicate false, allowing the sketch's boolean-or-list alternatives. Malformed context input or missing/invalid referenced variables needed for an otherwise applicable membership evaluation SHALL report an error. Missing explicit context SHALL contribute an empty layer, not inherit from another invocation; other applicable file/default layers SHALL still participate. Unsupported legacy resolution formats and superseded IDs SHALL fail with recovery guidance, without evaluating legacy history or substituting live profile definitions.
 
-The command SHALL be read-only, perform no remote retrieval, and leave config and compilation unchanged. It SHALL emit no applicable guidance when no requested trait matches. It SHALL not invoke itself recursively or advance, block, or archive an OpenSpec change. Instruction text accompanying the command SHALL direct the agent to run it from the owning project root, supply the current context when available, and apply the returned guidance to the current operation.
+The command SHALL be read-only, perform no remote retrieval, and leave config and compilation unchanged. It SHALL emit no applicable guidance when no requested trait matches. It SHALL not invoke itself recursively or advance, block, or archive an OpenSpec change. Instruction text accompanying the command SHALL direct the agent to run it from the owning project root, supply the selected --change-root and explicit context when applicable, and apply the returned guidance to the current operation.
 
 #### Scenario: Runtime archive flag
 - **WHEN** the do-not-archive trait resolves with a context containing boolean `do-not-archive: true`
@@ -201,7 +221,15 @@ The command SHALL be read-only, perform no remote retrieval, and leave config an
 
 #### Scenario: No context leakage
 - **WHEN** a second runtime invocation supplies no context after an earlier invocation supplied an archive flag
-- **THEN** the second invocation does not reuse that flag
+- **THEN** the second invocation does not reuse that explicit flag; any matching value must come independently from its applicable layers
+
+#### Scenario: Persistent runtime match
+- **WHEN** a current resolution has no explicit context but selected-change vars supply boolean do-not-archive=true
+- **THEN** the predicate matches using that typed value and resolution changes no lifecycle artifacts
+
+#### Scenario: Variable files cannot supply approval
+- **WHEN** runtime variables contain a lifecycle preference or returned guidance suggests an outcome
+- **THEN** the command remains advisory and does not select, approve, or perform an archive/discard/dissolution/spec-only operation
 
 ### Requirement: OpenSpec consumption through native fields
 

@@ -238,11 +238,19 @@ The default zuu trait SHALL use exactly two assertions with default AND grouping
 
 ### Requirement: Dynamic bodies retain stable identity
 
-Overspec SHALL support scalar variable interpolation using `${key}` in bodies at the trait's evaluation time. Values SHALL come from explicit phase input, with runtime values supplied by the runtime invocation. Missing referenced values or non-scalar substitutions SHALL report errors rather than emit incomplete text. Interpolation SHALL not execute shell commands or source code. Literal `$$` SHALL represent a dollar sign. Body changes SHALL retain the same trait identity. Names and attachments SHALL not be dynamically interpolated.
+Overspec SHALL support scalar variable interpolation using `${key}` in bodies at the trait's evaluation time. Values SHALL follow the scoped-variable-files precedence at the trait's evaluation time. Project file layers SHALL participate in static evaluation; selected-change file layers SHALL participate only in runtime resolution. Compile-time values SHALL remain frozen until update. Runtime bodies SHALL use the same effective variable mapping as runtime assertions and the declarations from the current stored resolution. Unsupported legacy resolution formats and superseded IDs SHALL fail with recovery guidance rather than rendering historical bodies. Missing referenced values or non-scalar substitutions SHALL report errors rather than emit incomplete text. Interpolation SHALL not execute shell commands or source code. Literal `$$` SHALL represent a dollar sign. Body changes SHALL retain the same trait identity. Names and attachments SHALL not be dynamically interpolated.
 
 #### Scenario: Runtime value changes
 - **WHEN** the same runtime trait is resolved twice with different supplied scalar values
 - **THEN** its rendered text changes while its trait name remains constant and persistent configuration is unchanged
+
+#### Scenario: Runtime file override changes
+- **WHEN** a selected change's current scalar value changes between invocations of the current resolution
+- **THEN** the next body uses the changed value without changing trait identity or shared config
+
+#### Scenario: List is not a body scalar
+- **WHEN** a matched trait interpolates a list-valued variable
+- **THEN** rendering fails with a scalar diagnostic even though that list can be used by membership assertions
 
 ### Requirement: Read-only resolution and explanations
 
@@ -254,11 +262,11 @@ Read-only resolution SHALL report retained, unmatched, overridden, and suppresse
 
 ### Requirement: Resolution-bound detail lookup
 
-`overspec trait show NAME --details` SHALL retrieve literal details by profile-independent name from the most recent successfully synchronized resolution for the owning project. An explicit `--resolution ID` SHALL select a retained historical resolution. Lookup SHALL support all three trait types, including unmatched or suppressed effective declarations, without evaluating assertions, rendering bodies, executing actions, fetching profiles, or writing state. It SHALL report the name, phase, attachment, and source origin with the explanation; absent details SHALL produce a successful explicit no-details result. Unknown names and absent, corrupt, or root-mismatched state SHALL produce actionable errors rather than falling back to live sources. Normal resolution/explanation output SHALL not dump details implicitly.
+`overspec trait show NAME --details` SHALL retrieve literal details by profile-independent name from the most recent successfully synchronized resolution for the owning project. An explicit `--resolution ID` SHALL guard the currently stored resolution; superseded IDs SHALL fail with current-state guidance. Lookup SHALL support all three trait types, including unmatched or suppressed effective declarations, without evaluating assertions, rendering bodies, executing actions, fetching profiles, or writing state. It SHALL report the name, phase, attachment, and source origin with the explanation; absent details SHALL produce a successful explicit no-details result. Unknown names and absent, corrupt, or root-mismatched state SHALL produce actionable errors rather than falling back to live sources. Normal resolution/explanation output SHALL not dump details implicitly.
 
 #### Scenario: Source changes after sync
 - **WHEN** a source's details or profile activation changes after successful sync
-- **THEN** default detail lookup still returns the saved explanation from that sync, and explicit historical lookup returns its selected retained version
+- **THEN** default detail lookup still returns the saved explanation from that sync, and an explicit matching current ID returns that same version; after resync replaces it, the old ID fails
 
 #### Scenario: Runtime details do not evaluate conditions
 - **WHEN** details are requested for a deferred runtime trait without invocation context
