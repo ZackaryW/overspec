@@ -1,0 +1,11 @@
+[[runtime-trait]]
+name = "utility-mature"
+attach = "rules.tasks"
+body = """During ff-change, use overspec-utilities in mature mode through the native tasks stage: verify planned utilities through observed RED, implementation, and GREEN; leave application wiring for apply.
+"""
+details = """Require a current accepted utility plan. Propose stays planning-only. Disabled or missing planning without a supplied plan leaves maturation pending. File existence is not test evidence. Reuse valid completion evidence on resume; report missing skills or unanswered decisions.
+"""
+
+[[runtime-trait.assert.1.assertion]]
+type = "~runtime-context-match"
+kv = "utility-mature=false"

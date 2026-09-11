@@ -4,8 +4,10 @@ from zuu.case13 import deep_get
 
 
 def detect(evidence):
-    if any(evidence.file("cucumber." + suffix)
-           for suffix in ("js", "cjs", "mjs", "json", "yaml", "yml")):
+    if any(
+        evidence.file("cucumber." + suffix)
+        for suffix in ("js", "cjs", "mjs", "json", "yaml", "yml")
+    ):
         return True
     document = evidence.document("package.json", "json")
     if document is None:

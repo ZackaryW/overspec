@@ -1,0 +1,11 @@
+[[runtime-trait]]
+name = "evidence-tasks"
+attach = "rules.tasks"
+body = """Make each task state its observable completion evidence. Keep required work pending until its full scope is satisfied; distinguish utility verification from application integration.
+"""
+details = """An artifact or test file existing does not establish execution. Record actual commands and outcomes for completed utility work and make remaining wiring explicit. Report blockers, disabled procedures, and not-applicable work truthfully.
+"""
+
+[[runtime-trait.assert.1.assertion]]
+type = "~runtime-context-match"
+kv = "evidence-first=false"

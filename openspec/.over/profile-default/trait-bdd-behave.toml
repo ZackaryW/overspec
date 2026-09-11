@@ -1,0 +1,15 @@
+[[runtime-trait]]
+name = "bdd-behave"
+attach = "operations.apply.guidance"
+body = """Follow the project's established Behave features, steps, fixtures, and environment hooks. Exercise observable behavior through its real public boundary using its configured runner.
+"""
+details = """Activated by explicit bdd selection or dedicated configuration / declared Behave dependency, including optional and standardized development groups. Keep pure case matrices in unit tests. Inspect actual runner and dependency availability; selection does not install Behave or invent a test command.
+"""
+
+[[runtime-trait.assert.1.assertion]]
+type = "~runtime-context-match"
+kv = "bdd-behave=false"
+
+[[runtime-trait.assert.1.assertion]]
+type = "bdd-framework"
+name = "behave"

@@ -1,6 +1,6 @@
-[[trait]]
+[[runtime-trait]]
 name = "tdd"
-attach = "operations.apply.guidance"
+attach = "context"
 body = """
 For each behavior change, write and run a test that fails for the intended
 reason before implementing. Implement minimally, rerun to green, then refactor
@@ -41,3 +41,8 @@ and mechanical changes without behavior changes need appropriate verification,
 not artificial failing tests. If a required behavioral test cannot run, report
 the obstacle; do not claim that the red or green step was completed.
 """
+
+[runtime-trait.assert.1]
+[[runtime-trait.assert.1.assertion]]
+type = "~runtime-context-match"
+kv = "tdd=false"

@@ -37,7 +37,19 @@ def test_repository_default_sources_discovered():
 
     root = Path(__file__).resolve().parents[1] / "openspec/.over/profile-default"
     assert [p.name for p in trait_files(root)] == [
+        "trait-bdd-behave.toml",
+        "trait-bdd-cucumber.toml",
+        "trait-bdd-flutter.toml",
+        "trait-decision-explore.toml",
+        "trait-decision-propose.toml",
+        "trait-evidence-apply.toml",
+        "trait-evidence-tasks.toml",
+        "trait-integration-test-policies.toml",
+        "trait-prototype-explore.toml",
+        "trait-prototype-propose.toml",
         "trait-tdd.toml",
+        "trait-utility-mature.toml",
+        "trait-utility-plan.toml",
         "trait-zmem-commits.toml",
         "trait-zuu.toml",
         "traits.toml",

@@ -1,8 +1,8 @@
 """Confined optional manifest reads; no installation or configuration execution."""
 
 import json
-from pathlib import Path
 import tomllib
+from pathlib import Path
 
 from ruamel.yaml import YAML
 from zuu.case2 import FileSystemSnapshot
@@ -34,11 +34,14 @@ class Evidence:
             plan.revalidate()
             content = plan.target.read_text(encoding="utf-8")
             plan.revalidate()
-            parsers = {"toml": tomllib.loads, "json": json.loads,
-                       "yaml": YAML(typ="safe").load}
+            parsers = {
+                "toml": tomllib.loads,
+                "json": json.loads,
+                "yaml": YAML(typ="safe").load,
+            }
             document = parsers[format](content)
             if not isinstance(document, dict):
-                raise ValueError("manifest must be a mapping")
+                raise TypeError("manifest must be a mapping")
             return document
         except Exception as exc:
             raise ValueError(f"{relative}: {exc}") from exc
@@ -51,7 +54,8 @@ class Evidence:
             plan.revalidate()
             snapshot = FileSystemSnapshot.capture([plan.target])
             plan.revalidate()
-            return any(Path(entry.relative_path).suffix == ".dart"
-                       for entry in snapshot.files)
+            return any(
+                Path(entry.relative_path).suffix == ".dart" for entry in snapshot.files
+            )
         except (ValueError, OSError) as exc:
             raise ValueError(f"{relative}: {exc}") from exc

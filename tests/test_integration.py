@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 from conftest import declaration, source
 
-from overspec.core.projection import parse_yaml
 from overspec.core.resolution import show_details
 
 
@@ -130,31 +129,20 @@ def test_default_profile_eligibility_and_seeded_guidance(project):
     pyproject = project.root / "pyproject.toml"
     pyproject.write_text('[project]\ndependencies=["zuu"]')
     project.initialize()
-    project.sync()
-    config = project.root / "openspec/config.yaml"
-    eligible = parse_yaml(config.read_text())["operations"]["apply"]["guidance"]
-    seeded = parse_yaml((repository / "openspec/config.yaml").read_text())[
-        "operations"
-    ]["apply"]["guidance"]
-    assert eligible == seeded
-    assert len(eligible) == 2
-    assert "observe the failure" in show_details(project.root, "tdd")["details"]
-    assert "observe the failure" not in config.read_text()
+    identity = project.sync()['resolution']
+    config = project.root / 'openspec/config.yaml'
+    from overspec.core.resolution import resolve_runtime
+    def current():
+        return {r['name']: r['body'] for r in resolve_runtime(
+            project.root, identity, 'context', ['tdd', 'zuu'])}
+    assert set(current()) == {'tdd', 'zuu'}
+    assert 'observe the failure' in show_details(project.root, 'tdd')['details']
+    assert 'observe the failure' not in config.read_text()
     for file in (python, lock, pyproject):
         original = file.read_bytes()
         file.unlink()
-        project.sync()
-        assert parse_yaml(config.read_text())["operations"]["apply"]["guidance"] == [
-            eligible[0]
-        ]
+        assert set(current()) == {'tdd'}
         file.write_bytes(original)
-        project.sync()
-        assert (
-            parse_yaml(config.read_text())["operations"]["apply"]["guidance"]
-            == eligible
-        )
+        assert set(current()) == {'tdd', 'zuu'}
     pyproject.write_text('[project]\ndependencies=[]\n[tool.uv.sources]\nzuu="local"')
-    project.sync()
-    assert parse_yaml(config.read_text())["operations"]["apply"]["guidance"] == [
-        eligible[0]
-    ]
+    assert set(current()) == {'tdd'}

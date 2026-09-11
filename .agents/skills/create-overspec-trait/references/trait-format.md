@@ -11,8 +11,8 @@ contain multiple declarations, but a separate file helps keep a responsibility s
 | `[[trait]]` | Sync or read-only static resolution |
 | `[[runtime-trait]]` | Saved runtime command with invocation context |
 
-Attachments are `context`, `rules.<artifact-id>`, `operations.apply.guidance`, and
-`operations.archive.guidance`. The entire suffix after `rules.` is one literal
+Attachments are `context`, `rules.<artifact-id>`, and `operations.<operation>.guidance`
+for apply, archive, explore, and propose. The entire suffix after `rules.` is one literal
 artifact ID. Use context for guidance that applies across operations, such as a
 commit-authoring skill reference; there is no `operations.commit.guidance` target.
 
@@ -96,6 +96,7 @@ Prefer grouped tables for new traits; legacy flat arrays exist for older sources
 | `require-trait`, `loaded-trait` | `trait = "name"`; previously matched trait |
 | `runtime-context-match` | `kv = "flag=true"`; typed scalar equality |
 | `runtime-context-includes` | `k = "changes"`, `includes = "$activeChanges"`; list overlap |
+| `bdd-framework` | `name = "behave"`, `"cucumber"`, or `"flutter"`; runtime selection/evidence |
 
 A leading `~` negates a leaf, such as `type = "~loaded-trait"`. It does not name a
 different handler. Runtime-context assertions belong only in runtime traits.
@@ -113,9 +114,18 @@ Bodies support `${key}` scalar interpolation and `$$` for a literal dollar.
 Names, attachments, and details are not interpolated. Bodies are not executed.
 Do not write generated provenance markers into source bodies; sync adds them.
 
-Project `profile-<name>` replaces the same-name user profile as a complete source.
-Loose local traits outside profile trees then replace same-name declarations
-completely, including omitted details. Duplicates within a layer are errors.
+Same-name profile contributors compose by source priority: package, acquired
+repositories, then workspace. Matching trait names replace whole declarations,
+including omitted details; other lower declarations survive. Standalone traits
+follow the selected profile within each source. Duplicates within a layer fail.
+
+Configurable guidance uses runtime traits with a first negated
+`runtime-context-match` leaf, for example `kv = "utility-plan=false"`. Only typed
+false disables. Paired attachments have distinct names but share a control.
+For BDD, place that off check before `bdd-framework`; absent `bdd` detects,
+an explicit supported list replaces detection, and `[]` selects none. Use
+`details` for the evidence contract. Keep procedure delegation in native stage
+instructions and reference its skill briefly in the body.
 
 `overspec trait show NAME --details` reads details retained by the last successful
 sync; `--resolution ID` must match the current snapshot in `.over/.state.json`.

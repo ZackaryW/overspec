@@ -1,0 +1,15 @@
+[[runtime-trait]]
+name = "bdd-cucumber"
+attach = "operations.apply.guidance"
+body = """Follow the project's established Cucumber features, step definitions, hooks, and runner configuration. Verify observable behavior through public boundaries.
+"""
+details = """Activated by explicit bdd selection or dedicated Cucumber configuration / @cucumber/cucumber dependencies. Read configuration without executing it for detection. Use existing project scripts and fixtures; do not fabricate commands or install a framework merely because it was selected.
+"""
+
+[[runtime-trait.assert.1.assertion]]
+type = "~runtime-context-match"
+kv = "bdd-cucumber=false"
+
+[[runtime-trait.assert.1.assertion]]
+type = "bdd-framework"
+name = "cucumber"

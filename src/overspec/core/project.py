@@ -233,7 +233,7 @@ class Project:
                     tofile=str(path),
                 )
             ),
-            "ownership": "Sync replaces manual edits in context, rules, and apply/archive guidance.",
+            "ownership": "Sync replaces manual edits in context, rules, and apply/archive/explore/propose guidance.",
         }
 
         def recheck():

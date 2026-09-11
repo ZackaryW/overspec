@@ -98,7 +98,7 @@ def test_installed_default_lifecycle_and_overrides(installed, tmp_path):
     rows = invoke(installed, project, home, "trait", "resolve", "--explain", "--json")
     tdd = next(r for r in rows if r["name"] == "tdd")
     assert (
-        tdd["origin"].startswith("package:overspec/") and tdd["status"] == "unevaluated"
+        tdd["origin"].startswith("package:overspec/") and tdd["status"] == "deferred"
     )
     assert not (project / "openspec/.over").exists() and not home.exists()
     result = invoke(
@@ -106,8 +106,11 @@ def test_installed_default_lifecycle_and_overrides(installed, tmp_path):
     )
     assert result["setup"]["success"] and result["compilation"]
     result = invoke(installed, project, home, "sync", "--json")
-    assert "over:tdd" in config.read_text()
-    assert "over:zuu" not in config.read_text()  # This is not a Python/uv project.
+    assert "over:tdd,zuu" in config.read_text()
+    rows = invoke(installed, project, home, "trait", "resolve", "--resolution", result["resolution"],
+                  "--attach", "context", "--trait", "tdd", "--trait", "zuu", "--json")
+    assert [r['name'] for r in rows] == ['tdd']  # Not a Python/uv project.
+    assert not (project / '.agents').exists() and not (project / 'openspec/schemas').exists()
     state = project / "openspec/.over/.state.json"
     before = [(p.read_bytes(), p.stat().st_mtime_ns) for p in (config, state)]
     assert not invoke(installed, project, home, "sync", "--json")["changed"]
@@ -157,6 +160,12 @@ from overspec.core.resolution import resolve_runtime, show_details
 rows = resolve_runtime(p.root, result['resolution'], 'operations.archive.guidance', ['do-not-archive-openspec-change'], {'do-not-archive': True})
 assert rows and rows[0]['name'] == 'do-not-archive-openspec-change'
 assert show_details(p.root, 'tdd')['details']
+assert resolve_runtime(p.root, result['resolution'], 'rules.design', ['utility-plan'])
+assert not resolve_runtime(p.root, result['resolution'], 'rules.design', ['utility-plan'], {'utility-plan': False})
+assert not resolve_runtime(p.root, result['resolution'], 'context', ['tdd'], {'tdd': False})
+rows = resolve_runtime(p.root, result['resolution'], 'operations.apply.guidance', ['bdd-behave', 'bdd-cucumber', 'bdd-flutter'], {'bdd': ['behave', 'flutter']})
+assert [row['name'] for row in rows] == ['bdd-behave', 'bdd-flutter']
+assert not (p.root / '.agents').exists() and not (p.root / 'openspec/schemas').exists()
 assert snapshot() == before
 """
     write(tmp_path, "openspec/config.yaml", "schema: spec-driven\n")
@@ -184,7 +193,9 @@ def test_installed_python_conditions_and_absent_optional_tools(installed, tmp_pa
     )
     invoke(isolated, project, home, "update", "--json")
     result = invoke(isolated, project, home, "sync", "--json")
-    assert "over:zuu" in result["candidate"]
+    rows = invoke(isolated, project, home, "trait", "resolve", "--resolution", result["resolution"],
+                  "--attach", "context", "--trait", "zuu", "--json")
+    assert [r['name'] for r in rows] == ['zuu']
     rows = invoke(isolated, project, home, "trait", "resolve", "--explain", "--json")
     assert (
         next(r for r in rows if r["name"] == "require-codegraph")["status"]

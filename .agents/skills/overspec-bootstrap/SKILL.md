@@ -45,6 +45,14 @@ changes and artifacts; Overspec composes guidance into its configuration.
 
 ## Work within the existing workflows
 
+For the configurable utility workflow, follow [references/workflow-policies.md](references/workflow-policies.md).
+Check native explore/propose instruction support and the `overspec-utilities` skill
+before claiming setup is complete. Installing the project-local `overspec` schema
+and selecting it are explicit setup actions; init, sync, and profile acquisition
+do not install schemas or skills. Keep ordinary setup usable without claiming the
+utility stage integration is active. Explain off controls and BDD selection when
+relevant; do not create user preferences automatically.
+
 After OpenSpec creates a later change, get its exact `changeRoot` from
 `openspec status --change <name> --json`, retaining `--store <id>` when selected.
 Run `overspec init --setup-only --project <root> --change-root <changeRoot>`.

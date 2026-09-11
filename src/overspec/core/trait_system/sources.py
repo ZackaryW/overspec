@@ -3,6 +3,7 @@
 import re
 import tomllib
 
+from ..operations import OPERATIONS
 from .conditions import parse_condition
 from .models import PHASES, Trait, nonblank
 from .registry import builtins
@@ -10,7 +11,8 @@ from .registry import builtins
 
 def attachment(value):
     if not isinstance(value, str) or not (
-        value in ("context", "operations.apply.guidance", "operations.archive.guidance")
+        value == "context"
+        or value in {f"operations.{name}.guidance" for name in OPERATIONS}
         or value.startswith("rules.")
         and value[6:].strip()
     ):

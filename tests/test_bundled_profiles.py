@@ -150,7 +150,7 @@ def test_preinit_explanation_discovers_without_evaluation_or_writes(
     if json_output:
         rows = json.loads(result.output)
         tdd = next(r for r in rows if r["name"] == "tdd")
-        assert tdd["status"] == "unevaluated"
+        assert tdd["status"] == "deferred"
         assert tdd["decision"] is None
     else:
         assert "tdd" in result.output and "unevaluated" in result.output

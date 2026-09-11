@@ -1,12 +1,16 @@
 from dataclasses import dataclass
 
-from .base import Assertion
 from overspec.core.frameworks import behave, cucumber, flutter
 from overspec.core.frameworks.evidence import Evidence
 from overspec.core.trait_system.models import MatchResult, fields
 
+from .base import Assertion
 
-DETECTORS = {"behave": behave.detect, "cucumber": cucumber.detect, "flutter": flutter.detect}
+DETECTORS = {
+    "behave": behave.detect,
+    "cucumber": cucumber.detect,
+    "flutter": flutter.detect,
+}
 
 
 @dataclass(frozen=True)
@@ -28,8 +32,12 @@ class BddFrameworkAssertion(Assertion):
             if not isinstance(selection, tuple) or any(
                 not isinstance(v, str) or v not in DETECTORS for v in selection
             ):
-                raise ValueError("bdd must be a list of behave, cucumber, or flutter identifiers (or [])")
+                raise ValueError(
+                    "bdd must be a list of behave, cucumber, or flutter identifiers (or [])"
+                )
             matched = self.name in selection
-            return MatchResult(matched, f"Explicit bdd selection for {self.name}: {matched}")
+            return MatchResult(
+                matched, f"Explicit bdd selection for {self.name}: {matched}"
+            )
         matched = DETECTORS[self.name](Evidence(context.project))
         return MatchResult(matched, f"Repository evidence for {self.name}: {matched}")

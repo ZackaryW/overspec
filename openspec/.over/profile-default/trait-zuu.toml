@@ -1,6 +1,6 @@
-[[trait]]
+[[runtime-trait]]
 name = "zuu"
-attach = "operations.apply.guidance"
+attach = "context"
 body = """
 Prefer zuu's public APIs before writing equivalent utilities. Inspect the
 available cases and their contracts for the project's version, and reuse those
@@ -25,11 +25,15 @@ repeatable. Mock-call assertions alone do not establish that the integration
 behaves correctly.
 """
 
-[trait.assert.1]
-[[trait.assert.1.assertion]]
+[runtime-trait.assert.1]
+[[runtime-trait.assert.1.assertion]]
+type = "~runtime-context-match"
+kv = "zuu=false"
+
+[[runtime-trait.assert.1.assertion]]
 type = "files-exist"
 paths = [".python-version", "uv.lock"]
 
-[[trait.assert.1.assertion]]
+[[runtime-trait.assert.1.assertion]]
 type = "python-dependency"
 name = "zuu"

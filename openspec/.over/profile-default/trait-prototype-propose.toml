@@ -1,0 +1,11 @@
+[[runtime-trait]]
+name = "prototype-propose"
+attach = "operations.propose.guidance"
+body = """Settle prototype need before dependent planning: ask for a bounded experiment or state concrete evidence that makes one unnecessary. Preserve an earlier explicit answer.
+"""
+details = """Propose remains planning-only. Record a necessary experiment as pending authorized implementation, with its question, scope, and acceptance evidence. Do not fabricate a prototype merely to satisfy a process step.
+"""
+
+[[runtime-trait.assert.1.assertion]]
+type = "~runtime-context-match"
+kv = "prototype-choice=false"

@@ -1,0 +1,11 @@
+[[runtime-trait]]
+name = "utility-plan"
+attach = "rules.design"
+body = """Use overspec-utilities in plan mode through the native design stage. Record the Ponytail reuse assessment, utility contracts, and focused verification in the accepted utility plan.
+"""
+details = """Assess existing project and dependency APIs before custom mechanics. Identify concrete mismatches, ownership, inputs, outputs, side effects, and errors. No necessary utility means an evidence-backed not-applicable result; application wiring remains separately planned.
+"""
+
+[[runtime-trait.assert.1.assertion]]
+type = "~runtime-context-match"
+kv = "utility-plan=false"

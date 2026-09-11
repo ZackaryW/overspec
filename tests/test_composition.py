@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import pytest
 
 
@@ -11,10 +12,11 @@ def test_parse_all_types_and_optional_details():
         for p in sorted(root.glob("trait*.toml"))
         for t in parse_document(p.read_text(encoding="utf-8"), str(p))
     ]
-    assert len(traits) == 8
+    assert len(traits) == 20
     assert {t.phase for t in traits} == {"compiletime-trait", "trait", "runtime-trait"}
     tdd = next(t for t in traits if t.name == "tdd")
-    assert not tdd.predicates and "observe the failure" in tdd.details
+    assert tdd.phase == "runtime-trait" and tdd.attach == "context"
+    assert tdd.predicates and "observe the failure" in tdd.details
     parsed = parse_document(
         '[[trait]]\nname="x"\nattach="rules.review.notes"\nbody="brief"\ndetails="  "',
         "sample",
@@ -42,7 +44,7 @@ def test_invalid_declarations_report_origin(extra):
 
 
 def test_full_local_override_preserves_order_and_removes_details():
-    from overspec.core.trait_system.sources import parse_document, compose
+    from overspec.core.trait_system.sources import compose, parse_document
 
     profile = parse_document(
         '[[trait]]\nname="a"\nattach="context"\nbody="old"\ndetails="old details"\n[[trait]]\nname="b"\nattach="context"\nbody="b"',
