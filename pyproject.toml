@@ -20,11 +20,15 @@ dependencies = [
 [project.scripts]
 overspec = "overspec:main"
 
+[project.optional-dependencies]
+saucepan = ["saucepan-sdk"]
+
 [build-system]
 requires = ["uv_build>=0.12.0,<0.13.0"]
 build-backend = "uv_build"
 
 [tool.uv.sources]
+saucepan-sdk = { git = "https://github.com/ZackaryW/saucepan", rev = "43ba58936c48c3daf00e0e1cd25b870d4869731a", subdirectory = "sdk/python" }
 zuat = { git = "https://github.com/ZackaryW/zuat" }
 zuu = { git = "https://github.com/ZackaryW/zuu" }
 
