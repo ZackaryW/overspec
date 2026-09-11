@@ -56,7 +56,7 @@ operations:
         retained by the chosen outcome; use zmem-author-commits for the final review when available.
       - | # over:do-not-archive-openspec-change
         From this project's root, run:
-        overspec trait resolve --resolution 566965e2a94d2e1c96b7a37f815cac0b3f44312d6f4dc4a6527908e2555214a4 --attach operations.archive.guidance --trait do-not-archive-openspec-change
+        overspec trait resolve --resolution 20db2aa50fa4cd9d94aaae56d3414332887b9087179989ffa2f196d3e2b33c4c --attach operations.archive.guidance --trait do-not-archive-openspec-change
         Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
         For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json (preserving the selected --store), then append --change-root <changeRoot> to this command. Without a selected change, use project variables only.
 context: |

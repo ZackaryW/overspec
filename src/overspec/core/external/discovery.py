@@ -15,6 +15,7 @@ from .settings import connection
 class Catalog:
     layers: list = field(default_factory=list)
     profiles: dict = field(default_factory=dict)
+    profile_layers: list = field(default_factory=list)
     profile_origins: dict = field(default_factory=dict)
     repositories: list = field(default_factory=list)
     excluded: list = field(default_factory=list)
@@ -79,8 +80,10 @@ def discover(home, *, client_factory=None):
         profiles = category(repo.root, "over-profiles")
         files = trait_files(standalone, local=True) if standalone else []
         result.layers.append(files)
-        for name, path in profile_directories(profiles).items() if profiles else []:
-            result.profiles[name] = path
+        candidates = profile_directories(profiles) if profiles else {}
+        result.profile_layers.append(candidates)
+        for name, path in candidates.items():
+            result.profiles.setdefault(name, []).append(path)
             origin, metadata = result.describe(path)
             result.profile_origins.setdefault(name, []).append(
                 {"origin": origin, **metadata}

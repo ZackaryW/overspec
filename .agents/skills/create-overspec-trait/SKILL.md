@@ -20,8 +20,9 @@ declaration format and condition rules.
   follow its requested profile or local-override scope rather than assuming the
   same authoring policy.
 - Profile mode defaults off and still uses default with project overrides. Do not
-  enable profile management merely to create a default trait. User profiles live
-  under `~/.overspec`; project sources remain under `openspec/.over`.
+  enable profile management merely to create a default trait. The installed package
+  supplies default; acquired repositories and project `openspec/.over` provide
+  extensions. `~/.overspec` holds settings, not authored trait sources.
 - Choose a short stable name, one evaluation lifetime, and one attachment. Use
   `trait` for conditions refreshed at sync, `compiletime-trait` for intentionally
   frozen init/update checks, and `runtime-trait` only for invocation-time inputs.

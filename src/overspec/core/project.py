@@ -6,10 +6,9 @@ from dataclasses import replace
 from pathlib import Path
 
 from zuu.case2 import FileSystemSnapshot
-from zuu.case5 import ConfinedPath
 
 from . import storage
-from .profiles import select_profile, settings, trait_files
+from .profiles import settings
 from .trait_system.evaluator import evaluate, validate_references
 from .trait_system.rendering import VARIABLE, variables
 from .trait_system.sources import compose, parse_document
@@ -26,72 +25,39 @@ class Project:
         self.state = self.root / storage.STATE_PATH
 
     def source_inputs(self):
-        from .external.discovery import discover
+        from .source_plan import compose_plan
 
-        ConfinedPath("openspec/.over").inspect(self.root)
-        catalog = discover(self.home)
-        selected, directory = select_profile(
-            self.root, self.home, external=catalog.profiles
-        )
-        profile_files = trait_files(directory) if directory else []
-        local_files = trait_files(self.over, local=True)
-        profile_identities = {(p.stat().st_dev, p.stat().st_ino) for p in profile_files}
-        local_files = [
-            p
-            for p in local_files
-            if (p.stat().st_dev, p.stat().st_ino) not in profile_identities
-        ]
-        layers = [
-            profile_files,
-            *catalog.layers,
-            trait_files(self.home, local=True),
-            local_files,
-        ]
-        return catalog, selected, directory, layers
+        return compose_plan(self.root, self.home)
 
     def source_evidence(self, inputs=None):
-        catalog, selected, directory, layers = inputs or self.source_inputs()
-        paths = list(dict.fromkeys(p for layer in layers for p in layer))
-        for root in (self.home, self.over):
-            if root.exists() and storage.read_bytes(root, "config.toml") is not None:
-                paths.append(root / "config.toml")
+        plan = inputs or self.source_inputs()
+        paths = [
+            root / "config.toml"
+            for root in (self.home, self.over)
+            if root.exists() and storage.read_bytes(root, "config.toml") is not None
+        ]
         return (
-            selected,
-            str(directory),
-            catalog.evidence,
+            plan.selected,
+            plan.evidence,
             FileSystemSnapshot.capture(paths) if paths else None,
         )
 
     def inventory(self, *, inputs=None):
-        catalog, selected, directory, layers = inputs or self.source_inputs()
-        files = list(dict.fromkeys(p for layer in layers for p in layer))
-        observed = FileSystemSnapshot.capture(files) if files else None
-        contents = (
-            {observed.roots[e.root_index]: e.content for e in observed.entries}
-            if observed
-            else {}
-        )
-
-        def parse(paths):
-            return [
-                replace(t, provenance=catalog.describe(p)[1])
-                for p in paths
-                for t in parse_document(
-                    contents[p].decode("utf-8"), catalog.describe(p)[0]
-                )
+        plan = inputs or self.source_inputs()
+        layers = [
+            [
+                replace(t, provenance=doc.provenance)
+                for doc in layer
+                for t in parse_document(doc.content.decode("utf-8"), doc.origin)
             ]
-
-        effective, overridden = compose(*(parse(paths) for paths in layers))
+            for layer in plan.layers
+        ]
+        effective, overridden = compose(*layers)
         validate_references(effective)
         base = variables(
             self.configured_variables(), *file_layers(self.root, "openspec/.over/")
         )
-        return (
-            effective,
-            overridden,
-            [selected, catalog.describe(directory)[0] if directory else None],
-            base,
-        )
+        return effective, overridden, plan.selected, base
 
     def configured_variables(self):
         return variables(
@@ -205,7 +171,7 @@ class Project:
             "variables": inputs,
             "runtime_defaults": variables(self.configured_variables(), values or {}),
             "static": result,
-            "sources": sources[0].excluded,
+            "sources": sources.excluded,
         }
 
     def evidence(self, *, config=True, inputs=None):

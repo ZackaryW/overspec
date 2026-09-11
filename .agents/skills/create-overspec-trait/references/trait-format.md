@@ -24,12 +24,15 @@ back to `openspec/.over/` when its top-level directory is absent. An existing em
 top-level directory suppresses fallback. This repository keeps its authored
 default under `openspec/.over/profile-default`; no relocation is required.
 
-The consumer orders selected-profile traits, external standalone source layers,
-user standalone traits, then project standalone traits. A later same-name trait
-replaces the complete declaration, including phase, conditions, body and details;
-duplicate names within one layer fail. Use plain names without source/profile
-prefixes. Only the selected winning profile is parsed. Source variables and skills
-are not imported with these declarations.
+The consumer applies packaged default, acquired repositories in stable source
+order, then the workspace. Each repository/workspace applies its selected profile
+before its own standalone traits. A higher source profile beats lower standalone
+traits. All same-name profile contributors extend trait-by-trait; a matching name
+replaces the complete declaration, including phase, conditions, body, and details.
+Duplicates within one profile contributor or standalone layer fail. Use plain
+names without source/profile prefixes. Only selected-name profile bodies are
+parsed, and named profiles do not implicitly inherit default. Direct user-home
+traits/profiles are not sources. Source variables and skills are not imported.
 
 ```toml
 [[trait]]

@@ -90,7 +90,6 @@ def selected_name(home):
     name = os.environ.get("OVERSPEC_PROFILE", data.get("selected"))
     if name is None:
         return "default", False
-    from .remotes import profile_name
 
     if not isinstance(name, str) or not name.strip():
         raise ValueError("Selected profile must be a nonblank name")
@@ -106,32 +105,21 @@ def profile_directory(root, name):
     return plan.target if plan.state == TargetState.DIRECTORY else None
 
 
-def resolve_profile(project, home, name, *, external=None):
-    from .external.discovery import discover
-    from .remotes import remote_profile
-
-    external = discover(home).profiles if external is None else external
-
-    if project.exists():
-        ConfinedPath("openspec/.over").inspect(project)
-    local = profile_directory(project / "openspec/.over", name)
-    if local is not None:
-        return local
-    authored = profile_directory(home, name)
-    remote = remote_profile(home, name)
-    if authored and remote:
-        raise ValueError(f"Local/remote profile name collision: {name}")
-    return authored or remote or external.get(name)
+def profile_name(name):
+    if not isinstance(name, str) or not name or "/" in name or "\\" in name:
+        raise ValueError("Profile name must be one portable path segment")
+    ConfinedPath("profile-" + name)
+    ConfinedPath(name)
+    return name
 
 
-def select_profile(project: Path, home: Path, *, external=None):
-    name, explicit = selected_name(home)
-    directory = resolve_profile(project, home, name, external=external)
-    if directory is None:
-        if explicit:
-            raise ValueError(f"Selected profile is missing: {name}")
-        return None, None
-    return name, directory
+def select_profile(project: Path, home: Path):
+    from .source_plan import profile_catalog
+
+    name, _ = selected_name(home)
+    if name not in profile_catalog(project, home):
+        raise ValueError(f"Selected profile is missing: {name}")
+    return name
 
 
 def toggle_profiles(home):
@@ -141,11 +129,12 @@ def toggle_profiles(home):
 
 
 def use_profile(project: Path, home: Path, name: str):
-    from .remotes import profile_name
 
     require_profiles(home)
     profile_name(name)
-    if resolve_profile(project, home, name) is None:
+    from .source_plan import profile_catalog
+
+    if name not in profile_catalog(project, home):
         raise ValueError(f"Selected profile is missing: {name}")
     _write_profiles(home, {"selected": name})
 
@@ -170,15 +159,3 @@ def _write_profiles(root, changes):
         os.replace(temp, plan.target)
     finally:
         Path(temp).unlink(missing_ok=True)
-
-
-def user_profiles(home):
-    require_profiles(home)
-    from .remotes import remote_profiles
-
-    local = profile_directories(home)
-    remote = remote_profiles(home)
-    collisions = local.keys() & remote.keys()
-    if collisions:
-        raise ValueError(f"Local/remote profile name collision: {sorted(collisions)}")
-    return {**remote, **local}

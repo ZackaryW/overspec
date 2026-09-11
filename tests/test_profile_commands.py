@@ -32,7 +32,7 @@ def test_command_surface_and_completion_refresh_after_toggling(project, monkeypa
 
     for enabled in (False, True, False):
         expected = (
-            {"activate", "use", "list", "pull", "update"} if enabled else {"activate"}
+            {"activate", "use", "list"} if enabled else {"activate"}
         )
         assert commands() == expected
         help_result = runner.invoke(app, args + ["--help"])

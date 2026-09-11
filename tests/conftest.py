@@ -9,8 +9,21 @@ def declaration(name, phase="trait", body=None, attach="context", **extra):
 
 
 @pytest.fixture
-def project(tmp_path):
+def project(tmp_path, monkeypatch):
+    # Narrow lifecycle/unit fixtures use an explicitly empty package source.
+    # Installed-package and bundled-profile tests exercise the real default.
+    from overspec.core import bundled
     from overspec.core.project import Project
+
+    class EmptyPackage:
+        def contributor(self):
+            return {"kind": "package", "package": "overspec", "version": "test",
+                    "origin": "package:overspec/profile-default", "path": "package:overspec/profile-default"}
+
+        def documents(self, reader):
+            return []
+
+    monkeypatch.setattr(bundled, "default_profile", EmptyPackage)
 
     root = tmp_path / "project"
     (root / "openspec/.over").mkdir(parents=True)

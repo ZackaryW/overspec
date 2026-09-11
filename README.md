@@ -25,10 +25,10 @@ through `--show-completion` and `--install-completion`.
 
 ## Start with an existing OpenSpec project
 
-This repository provides its reusable profile at `openspec/.over/profile-default`.
-Use it through the user-level Saucepan connection below, or copy that directory
-into your project's `openspec/.over/`. Profile mode is off by default; ordinary
-setup needs no activation:
+The installed package serves `profile-default` directly from its bundled resources.
+No second clone, Saucepan connection, or local profile directory is needed. Profile
+mode is off by default; ordinary setup needs no activation. The single authored
+source remains this repository's `openspec/.over/profile-default`.
 
 ```sh
 overspec init --project /path/to/project
@@ -37,8 +37,18 @@ overspec sync --project /path/to/project
 ```
 
 Run commands through `uv run overspec` when using this checkout rather than an
-installed console command. Remote retrieval is available after enabling profile
-mode, as described below.
+installed console command. Before init, `overspec trait resolve --explain` lists
+discovered traits as unevaluated without writing state. Initialization creates
+normal `.over` state/current files, but does not copy the packaged profile there.
+
+To install a built release wheel into a user tool environment:
+
+```sh
+uv tool install /path/to/overspec-0.1.0-py3-none-any.whl
+```
+
+The wheel declares pinned Git dependencies for zuat and zuu; installation needs
+those dependencies available. Subsequent default loading does not use the network.
 
 Use the repository's `overspec-bootstrap` skill for first-time orientation or
 setup after creating another change. Normal init discovers active changes through
@@ -105,26 +115,36 @@ refresh times never determine precedence. An absent/filtered listed source remai
 an inactive priority entry. Use Saucepan's scoped view or Overspec's JSON
 explanations to inspect IDs.
 
-Profile candidates use external source order, then user profiles, then project
-profiles. Each winner replaces the whole same-name profile. Trait declarations
-apply in this order: selected profile, external standalone sources, user standalone
-traits, project standalone traits. Later same-name declarations replace every field;
-duplicates inside one layer are errors. User standalone `trait*.toml` files are
-recursive below the chosen home, excluding profile, `.state`, and `.git` trees.
+Profile selection chooses a **name**; source priority decides which declarations win.
+Apply sources from low to high:
+
+1. Packaged `profile-default`, when default is selected.
+2. Each acquired repository in the order above: its selected profile, then its standalone traits.
+3. Workspace `openspec/.over`: its selected profile, then its standalone traits.
+
+Profiles extend trait-by-trait. Base `alpha,beta` plus extension `beta,gamma` yields
+base `alpha`, extension `beta`, and extension `gamma`. A higher repository's profile
+beats a lower repository's standalone declaration. A replacement replaces every
+field; nonconflicting lower names survive. Duplicates within one profile contributor
+or standalone layer are errors. An empty higher profile erases nothing. Every
+selected contributor is validated, even when its declarations are overridden.
 
 Automatic discovery uses only each source's **current whole-root artifact visible
 in the Overspec app view**. Historical, folder-only, or pinned-only acquisitions
 are excluded with guidance. If another app advances shared current, reacquire that
 whole current root under `overspec` before it contributes. Sync, previews, and
-listing never acquire, refresh, mirror, or change Saucepan filters. Existing
-`profile pull/update` commands retain their separate retrieval backend.
+listing never acquire, refresh, mirror, or change Saucepan filters. Acquisition
+belongs to Saucepan; Overspec has no profile pull/update commands.
 
 Run `overspec update` when the effective profile or compile-time declarations
 change, then preview and sync. Ordinary/runtime-only refreshes need sync. Saved
 runtime commands and details continue to work without Saucepan; they retain the
 synchronized definitions and use the consuming project's variable rules.
 `overspec trait resolve --explain --json` reports source provenance and exclusions;
-`profile list --json` reports external profile candidates when profile mode is on.
+`profile list --json` reports ordered `contributors` for each profile when mode
+is on. Contributors identify `kind` (package/repository/workspace), origin/location,
+and package version or repository source/revision. A composite profile has no
+singular winning directory.
 
 To run the real SDK/executable integration test, set
 `OVERSPEC_TEST_SAUCEPAN_BINARY` to an installed executable and run
@@ -154,29 +174,28 @@ every profile subtree supplement it; inactive profiles and `.state/` are exclude
 The repository's own authored traits all live in `profile-default`, so consumers
 can reuse that directory as a unit.
 
-User profiles live under `~/.overspec`, overridden by `OVERSPEC_HOME` or `--home`.
-User mode and selection are stored in `~/.overspec/config.toml`, with remote downloads and
-revisions under `~/.overspec/.state/remotes/`. Overspec does not automatically read
-or migrate `~/.over`, which may belong to another application. Project sources and
-resolution state remain under `openspec/.over/`.
-While mode is **off**, Overspec uses `profile-default` automatically. A project
-default completely replaces a user default, which replaces external defaults.
-Standalone traits then override same-name profile traits in the order above.
-Other named profiles and saved/environment selections
-are ignored. Without a default, loose local traits alone still work. A previously
-retrieved user default remains usable offline.
+User **settings** live under `~/.overspec`, overridden by `OVERSPEC_HOME` or
+`--home`: activation, saved selection, Saucepan connection/order, and configured
+variables. Direct user-home trait/profile directories and legacy remote copies
+are not sources. They are neither migrated nor deleted automatically. Overspec
+does not read or migrate `~/.over`, which may belong to another application.
+Project sources and generated resolution state remain under `openspec/.over/`.
+
+While mode is **off**, default composes the packaged base, repository extensions,
+and workspace overrides. Other profile names and saved/environment selections
+are ignored. Default is always available in a healthy installation.
 
 `profile activate` toggles the optional profile feature for the chosen user home.
 It takes no name: run it once to enable, and again to disable. Only `activate`
-appears under `profile` while off; `list`, `use`, `pull`, and `update` become
+appears under `profile` while off; `list` and `use` become
 available while on. Disabled commands are unavailable through direct invocation
 and completion too. Ordinary project and trait commands work in both modes.
 
 While mode is **on**, selection follows `OVERSPEC_PROFILE`, then the saved user
-choice, then implicit `default`. A project source still completely replaces a
-same-name user source. A missing explicit selection or an empty environment value
-is an error. No implicit default allows local-only composition. Project profile
-selectors, `--profile`, and `profile use --user` are no longer supported.
+choice, then implicit `default`. All matching profile contributors compose in
+source order. A named profile such as team does not implicitly inherit packaged
+default. A missing explicit selection or an empty environment value is an error.
+Project selectors, `--profile`, and `profile use --user` are not supported.
 
 ```sh
 overspec profile activate
@@ -461,31 +480,22 @@ does not import old generations. After verifying runtime/details, remove only th
 obsolete generated `.over/.state/` directory. Historical IDs no longer select old
 data. A corrupt .state.json must be restored or moved aside before regeneration.
 
-## Remote profiles
+## Upgrading the source model
 
-`profile pull` registers and retrieves a public GitHub directory through
-`zuu.case12.GitHubSubpath`. Omit a selector for the default branch, or use `--branch`
-or a full 40-character `--commit`. `profile update NAME` refreshes the registered
-source. Retrieval never activates profiles or recompiles projects implicitly.
+Legacy profile `pull`/`update` commands and direct user-home sources are removed
+without compatibility aliases. For shared extensions, explicitly acquire their
+whole repository through Saucepan in the `overspec` scope. Move independently
+authored user-home traits into a workspace or source repository deliberately.
+Old files remain untouched. An already acquired Overspec repository remains a
+normal higher-priority repository source until you explicitly remove it through
+Saucepan; it is no longer needed solely to obtain the packaged default.
 
-Starting with profile mode off:
-
-```sh
-overspec profile activate
-overspec profile pull default --owner ZackaryW --repo overspec --path openspec/.over/profile-default
-overspec profile use default
-```
-
-The remote example requires publication on GitHub. Local copies work before
-publication. Retrieval and refresh require enabled mode. Disabling preserves
-downloaded revisions and the saved selection; existing runtime commands and
-saved detail lookup remain usable regardless of mode.
-
-Downloads live in an owned user-state directory. Every retrieval, including cache
-hits, validates source content before publishing a revision. Failed downloads or
-validation preserve the last usable revision and activation. Local/remote user-name
-collisions are errors. A registered source cannot be changed in place; choose another
-name. Ordinary sync, runtime resolution, and detail lookup never fetch remotely.
+Run top-level `overspec update`, review `overspec sync --dry-run`, then sync when
+adopting a changed selected name or effective compile-time guidance. Package
+version changes, installation relocation, and fully overridden lower changes do
+not alone invalidate compilation. Saved runtime guidance remains usable until
+successful synchronization replaces its resolution. Missing/corrupt bundled
+content is an error, not a trigger to download a replacement.
 
 ## Development
 
@@ -504,7 +514,9 @@ openspec validate --archived --strict
 ```
 
 The full test suite requires the companion OpenSpec executable on PATH. It exercises
-OpenSpec in temporary projects and remote retrieval with generated ZIP archives
-through zuu's public injectable client; it does not modify sibling repositories or
-depend on live GitHub availability. Assertions and actions each implement an abstract
+OpenSpec in temporary projects, ordered repository sources through an injectable
+public SDK boundary, and actual wheel installation in an isolated environment
+without Saucepan. Wheel tests build directly and from an sdist; installation can
+fetch declared dependencies when uncached. The optional real Saucepan test uses
+its own test store. No test modifies sibling repositories or the user store. Assertions and actions each implement an abstract
 base contract with one concrete handler per file under `src/overspec/core/`.

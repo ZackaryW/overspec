@@ -1,4 +1,4 @@
-"""Profile discovery, activation, and explicit remote retrieval."""
+"""Profile mode, named selection, and ordered contributor discovery."""
 
 import os
 from typing import Annotated
@@ -8,17 +8,14 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from overspec.core import storage
-from overspec.core.external.discovery import discover
 from overspec.core.profiles import (
-    profile_directories,
     profile_settings,
+    require_profiles,
     selected_name,
     toggle_profiles,
     use_profile,
-    user_profiles,
 )
-from overspec.core.remotes import pull_profile, update_profile
+from overspec.core.source_plan import profile_catalog
 
 from .common import (
     HomeOption,
@@ -33,7 +30,7 @@ from .profile_mode import ProfileGroup
 
 app = typer.Typer(
     cls=ProfileGroup,
-    help="Browse, select, and retrieve reusable profiles.",
+    help="Browse and select reusable profiles.",
     invoke_without_command=True,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
@@ -48,69 +45,45 @@ def list_profiles(
     project: ProjectOption = None,
     json_output: JsonOption = False,
 ):
-    """List available profiles, their scope, and the active selection."""
+    """List profile contributors in ascending priority and the active selection."""
     project_target = target(ctx, home, project)
-    local = profile_directories(project_target.over)
-    users = user_profiles(project_target.home)
-    external = discover(project_target.home)
+    require_profiles(project_target.home)
+    catalog = profile_catalog(project_target.root, project_target.home)
     saved = profile_settings(project_target.home).get("selected")
     effective, _ = selected_name(project_target.home)
-    result = []
-    for name, path in sorted({**external.profiles, **users, **local}.items()):
-        item = {
+    result = [
+        {
             "name": name,
-            "path": str(path),
-            "level": "project"
-            if name in local
-            else "user"
-            if name in users
-            else "external",
+            "contributors": contributors,
             "active": name == effective,
             "selected": name == saved,
             "environment": os.environ.get("OVERSPEC_PROFILE"),
         }
-        if name in external.profile_origins:
-            candidates = external.profile_origins[name]
-            item["overridden"] = (
-                candidates if name in users or name in local else candidates[:-1]
-            )
-            if item["level"] == "external":
-                item.update(
-                    {
-                        key: value
-                        for key, value in candidates[-1].items()
-                        if key != "path"
-                    }
-                )
-                item["source_path"] = candidates[-1]["path"]
-        metadata = f".state/remotes/{name}/current.json"
-        if (
-            name not in local
-            and project_target.home.exists()
-            and storage.read_bytes(project_target.home, metadata)
-        ):
-            item.update(storage.read_json(project_target.home, metadata))
-        result.append(item)
+        for name, contributors in sorted(catalog.items())
+    ]
     if emit_json(ctx, json_output, result):
         return
-    console = Console(highlight=False)
-    if not result:
-        console.print(
-            "No profiles found. Add a profile directory or use overspec profile pull."
-        )
-        return
-    table = Table(title="Profiles", expand=True)
-    for column in ("Profile", "Scope", "Active", "Saved", "Location", "Revision"):
+    table = Table(title="Profiles (contributors: low to high priority)", expand=True)
+    for column in (
+        "Profile",
+        "Active",
+        "Saved",
+        "Source",
+        "Location",
+        "Version / revision",
+    ):
         table.add_column(column, overflow="fold")
     for item in result:
-        table.add_row(
-            Text(item["name"]),
-            item["level"],
-            "Yes" if item["active"] else "",
-            "Yes" if item["selected"] else "",
-            Text(item["path"]),
-            Text(item.get("commit", "")),
-        )
+        for contributor in item["contributors"]:
+            table.add_row(
+                Text(item["name"]),
+                "Yes" if item["active"] else "",
+                "Yes" if item["selected"] else "",
+                contributor["kind"],
+                Text(contributor["origin"]),
+                Text(contributor.get("version", contributor.get("revision", ""))),
+            )
+    console = Console(highlight=False)
     console.print(table)
     if "OVERSPEC_PROFILE" in os.environ:
         console.print(
@@ -154,82 +127,3 @@ def select(
             console.print(
                 f"Environment selection: {result['environment']}", markup=False
             )
-
-
-def show_revision(ctx, json_output, name, result):
-    if not emit_json(ctx, json_output, result):
-        console = Console(highlight=False)
-        console.print(
-            f"Profile {name}: {result['commit']}", markup=False, soft_wrap=True
-        )
-        console.print(f"Revision: {result['revision']}", markup=False, soft_wrap=True)
-
-
-@app.command("pull")
-@guard
-def pull(
-    ctx: typer.Context,
-    name: Annotated[
-        str, typer.Argument(help="Name to register in the user profile home.")
-    ],
-    owner: Annotated[
-        str,
-        typer.Option(help="GitHub owner or organization.", rich_help_panel="Source"),
-    ],
-    repo: Annotated[
-        str, typer.Option(help="GitHub repository name.", rich_help_panel="Source")
-    ],
-    path: Annotated[
-        str,
-        typer.Option(
-            help="Profile subdirectory inside the repository.", rich_help_panel="Source"
-        ),
-    ],
-    branch: Annotated[
-        str | None,
-        typer.Option(
-            help="Branch to track; omit for the default branch.",
-            rich_help_panel="Revision",
-        ),
-    ] = None,
-    commit: Annotated[
-        str | None,
-        typer.Option(
-            help="Full commit SHA; mutually exclusive with --branch.",
-            rich_help_panel="Revision",
-        ),
-    ] = None,
-    home: HomeOption = None,
-    project: ProjectOption = None,
-    json_output: JsonOption = False,
-):
-    """Retrieve a public GitHub profile without activating it."""
-    if branch is not None and commit is not None:
-        raise typer.BadParameter("Choose either --branch or --commit, not both.")
-    project_target = target(ctx, home, project)
-    source = {"kind": "github", "owner": owner, "repository": repo, "path": path}
-    source.update(
-        {
-            key: value
-            for key, value in (("branch", branch), ("commit", commit))
-            if value is not None
-        }
-    )
-    show_revision(
-        ctx, json_output, name, pull_profile(project_target.home, name, source)
-    )
-
-
-@app.command("update")
-@guard
-def refresh(
-    ctx: typer.Context,
-    name: Annotated[str, typer.Argument(help="Registered remote profile to refresh.")],
-    home: HomeOption = None,
-    project: ProjectOption = None,
-    json_output: JsonOption = False,
-):
-    """Refresh a registered remote profile, preserving the last usable revision."""
-    show_revision(
-        ctx, json_output, name, update_profile(target(ctx, home, project).home, name)
-    )

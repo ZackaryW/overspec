@@ -22,6 +22,10 @@ changes and artifacts; Overspec composes guidance into its configuration.
    Inspect the chosen user home's optional `[sources.saucepan]` connection when
    present. Read the shared-source section of the controls reference before
    diagnosing missing external profiles; discovery does not acquire repositories.
+   The installed package supplies default without a second clone or profile copy.
+   Before init, trait resolve --explain can inspect unevaluated sources without writes.
+   Direct user-home sources and profile pull/update are removed; use the reference
+   for deliberate relocation and scoped acquisition of extensions.
 3. With no compilation, run `overspec init --project <root>` within the requested
    setup scope. With existing compilation, use `overspec init --setup-only` for
    missing current files or new changes. Init discovers active changes; append

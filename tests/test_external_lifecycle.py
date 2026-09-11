@@ -30,8 +30,8 @@ def test_external_default_layers_and_provenance(project, external):
         for t in bundle["traits"]
         if t["declaration"]["name"] == "shared"
     ] == ["project"]
-    assert len(bundle["overridden"]) == 3
-    external_rows = [row for row in explain(bundle) if row.get("provenance")]
+    assert len(bundle["overridden"]) == 2
+    external_rows = [row for row in explain(bundle) if row.get("provenance", {}).get("source_id")]
     assert external_rows and all(
         row["provenance"]["source_id"] == "a" * 64 for row in external_rows
     )
@@ -40,13 +40,14 @@ def test_external_default_layers_and_provenance(project, external):
     assert "secret-marker" not in json.dumps(bundle)
 
 
-def test_project_profile_shadows_external_but_not_standalone(project, external):
+def test_project_profile_cannot_hide_malformed_external(project, external):
     client, root = external
     write(root, "over-profiles/profile-default/trait.toml", "bad TOML")
     write(root, "over-traits/trait.toml", declaration("external"))
     client.add(root)
     source(project, declaration("local"), "profile-default/trait.toml")
-    assert {t.name for t in project.inventory()[0]} == {"local", "external"}
+    with pytest.raises(ValueError):
+        project.inventory()
 
 
 def test_external_named_profile_and_cli_catalog(project, external, monkeypatch):
@@ -74,9 +75,10 @@ def test_external_named_profile_and_cli_catalog(project, external, monkeypatch):
         ],
     )
     assert result.exit_code == 0, result.output
-    row = json.loads(result.stdout)[0]
-    assert row["level"] == "external" and row["source_id"] == "a" * 64 and row["active"]
-    assert row["path"] == str(root / "over-profiles/profile-team")
+    row = next(r for r in json.loads(result.stdout) if r["name"] == "team")
+    contributor = row["contributors"][0]
+    assert contributor["kind"] == "repository" and contributor["source_id"] == "a" * 64 and row["active"]
+    assert contributor["path"] == "over-profiles/profile-team"
 
 
 def test_runtime_refresh_stable_compilation_and_saved_offline(

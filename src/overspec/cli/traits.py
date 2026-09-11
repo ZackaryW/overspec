@@ -113,6 +113,50 @@ def resolve(
     else:
         if attach or traits or context_file or change_root:
             raise typer.BadParameter("Runtime arguments require --resolution.")
+        if explain_output and not storage.has_compilation(project_target.root):
+            json_file(vars_file)  # Validate supplied input without evaluating traits.
+            plan = project_target.source_inputs()
+            effective, overridden, _, _ = project_target.inventory(inputs=plan)
+            decisions = [
+                {
+                    "name": t.name,
+                    "phase": t.phase,
+                    "attach": t.attach,
+                    "origin": t.origin,
+                    "provenance": t.provenance,
+                    "has_details": bool(t.details),
+                    "decision": None,
+                    "status": "deferred"
+                    if t.phase == "runtime-trait"
+                    else "unevaluated",
+                    "reason": "Run init to retain compilation before resolving guidance.",
+                }
+                for t in effective
+            ]
+            decisions.extend(
+                {
+                    "name": t.name,
+                    "phase": t.phase,
+                    "attach": t.attach,
+                    "origin": t.origin,
+                    "provenance": t.provenance,
+                    "status": "overridden",
+                }
+                for t in overridden
+            )
+            decisions.extend(
+                {
+                    "name": item["source_id"],
+                    "phase": "source",
+                    "attach": "-",
+                    "origin": "saucepan:" + item["source_id"],
+                    "status": "excluded",
+                    **item,
+                }
+                for item in plan.excluded
+            )
+            show_explanations(ctx, json_output, decisions)
+            return
         bundle = project_target.prepare(values=json_file(vars_file))
         result = contributions(bundle, storage.digest(bundle))
         project_yaml(
@@ -120,39 +164,7 @@ def resolve(
         )
         if explain_output:
             decisions = explain(bundle)
-            if emit_json(ctx, json_output, decisions):
-                return
-            table = Table(title="Trait resolution", expand=True)
-            for column in (
-                "Trait",
-                "Phase",
-                "Status",
-                "Attachment",
-                "Source",
-            ):
-                table.add_column(column, overflow="fold")
-            for item in decisions:
-                table.add_row(
-                    *(
-                        Text(str(item[key]))
-                        for key in ("name", "phase", "status", "attach", "origin")
-                    ),
-                )
-            console = Console(highlight=False)
-            console.print(table)
-            for item in decisions:
-                if item.get("reason"):
-                    console.print(Text(item["reason"]))
-                if item.get("provenance"):
-                    provenance = item["provenance"]
-                    console.print(
-                        Text(
-                            f"{item['name']}: revision {provenance['revision']}, "
-                            f"snapshot {provenance['snapshot']}, layout {provenance['layout']}"
-                        )
-                    )
-                if item.get("decision"):
-                    console.print(explanation_tree(item))
+            show_explanations(ctx, json_output, decisions)
             return
     if not emit_json(ctx, json_output, result) and result:
         # Guidance is a literal protocol payload: no markup interpretation or wrapping.
@@ -189,3 +201,46 @@ def show(
         typer.echo(
             f"{result['name']} ({result['phase']}, {result['attach']})\nSource: {result['origin']}\n\n{result['details'] or result['message']}"
         )
+
+
+def show_explanations(ctx, json_output, decisions):
+    if emit_json(ctx, json_output, decisions):
+        return
+    table = Table(title="Trait resolution", expand=True)
+    for column in (
+        "Trait",
+        "Phase",
+        "Status",
+        "Attachment",
+        "Source",
+    ):
+        table.add_column(column, overflow="fold")
+    for item in decisions:
+        table.add_row(
+            *(
+                Text(str(item[key]))
+                for key in ("name", "phase", "status", "attach", "origin")
+            ),
+        )
+    console = Console(highlight=False)
+    console.print(table)
+    for item in decisions:
+        if item.get("reason"):
+            console.print(Text(item["reason"]))
+        if (item.get("provenance") or {}).get("source_id"):
+            provenance = item["provenance"]
+            console.print(
+                Text(
+                    f"{item['name']}: revision {provenance['revision']}, "
+                    f"snapshot {provenance['snapshot']}, layout {provenance['layout']}"
+                )
+            )
+        elif (item.get("provenance") or {}).get("package"):
+            provenance = item["provenance"]
+            console.print(
+                Text(
+                    f"{item['name']}: package {provenance['package']} {provenance['version']}"
+                )
+            )
+        if item.get("decision"):
+            console.print(explanation_tree(item))

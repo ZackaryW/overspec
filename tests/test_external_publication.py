@@ -6,7 +6,7 @@ from overspec.core import storage
 
 
 @pytest.mark.parametrize(
-    "change", ["view", "current", "file", "layout", "order", "marker"]
+    "change", ["view", "current", "file", "layout", "order", "marker", "profile"]
 )
 @pytest.mark.parametrize("operation", ["sync", "compile"])
 def test_changed_external_inputs_reject_publication(
@@ -42,6 +42,9 @@ def test_changed_external_inputs_reject_publication(
             )
         elif change == "marker":
             (project.home / "marker").write_text("different secret")
+        elif change == "profile":
+            write(root, "openspec/.over/profile-default/trait.toml", declaration("contributor"))
+            client.add(root)
         return result
 
     monkeypatch.setattr(module, "evaluate", evaluate)
@@ -96,11 +99,12 @@ def test_overridden_compilation_and_unrelated_refresh_do_not_require_update(
     assert storage.read_state(project.root)["compilation"]["id"] == compilation
 
 
-def test_profile_source_change_requires_update(project, external):
+def test_ordinary_profile_contributor_change_keeps_compilation(project, external):
     client, root = external
     write(root, "over-profiles/profile-default/trait.toml", declaration("same"))
     client.add(root)
     project.initialize()
+    compilation = storage.read_state(project.root)["compilation"]["id"]
     source(project, declaration("same"), "profile-default/trait.toml")
-    with pytest.raises(ValueError, match="update"):
-        project.sync()
+    project.sync()
+    assert storage.read_state(project.root)["compilation"]["id"] == compilation

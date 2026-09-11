@@ -109,13 +109,13 @@ def test_sync_help_groups_options():
     assert "~/.overspec" in result.stdout
 
 
-def test_profile_table_and_empty_state(project):
+def test_profile_table_includes_packaged_default(project):
     assert run(project, "profile", "activate").returncode == 0
     empty = run(project, "profile", "list")
-    assert "No profiles found" in empty.stdout
+    assert "default" in empty.stdout and "package" in empty.stdout
     source(project, declaration("a"), "profile-default/traits.toml")
     result = run(project, "profile", "list")
-    for text in ("Profile", "Scope", "Active", "Location", "default", "project"):
+    for text in ("Profile", "Source", "Active", "Location", "default", "workspace"):
         assert text in result.stdout
 
 

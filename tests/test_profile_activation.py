@@ -42,13 +42,13 @@ def test_default_ignores_dormant_selection_and_unrelated_sources(project, monkey
 def test_enabled_environment_user_precedence_and_local_override(project, monkeypatch):
     project.home.mkdir()
     for name in ("default", "team", "strict"):
-        directory = project.home / f"profile-{name}"
+        directory = project.over / f"profile-{name}"
         directory.mkdir()
         (directory / "traits.toml").write_text(declaration(name))
     source(project, declaration("local-team"), "profile-team/traits.toml")
     profiles.toggle_profiles(project.home)
     profiles.use_profile(project.root, project.home, "strict")
-    assert profiles.select_profile(project.root, project.home)[0] == "strict"
+    assert profiles.select_profile(project.root, project.home) == "strict"
     monkeypatch.setenv("OVERSPEC_PROFILE", "team")
     assert [t.name for t in project.inventory()[0]] == ["local-team"]
     profiles.toggle_profiles(project.home)
@@ -63,13 +63,8 @@ def test_enabled_environment_user_precedence_and_local_override(project, monkeyp
 
 
 def test_management_requires_mode_before_side_effects(project):
-    from overspec.core.remotes import pull_profile, update_profile
-
     for operation in (
         lambda: profiles.use_profile(project.root, project.home, "default"),
-        lambda: profiles.user_profiles(project.home),
-        lambda: pull_profile(project.home, "default", {}),
-        lambda: update_profile(project.home, "default"),
     ):
         with pytest.raises(ValueError, match="profile activate"):
             operation()

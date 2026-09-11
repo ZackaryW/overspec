@@ -66,23 +66,22 @@ def test_redirected_directory_rejected(tmp_path):
         trait_files(root)
 
 
-def test_selection_precedence_shadowing_and_activation(tmp_path):
+def test_selected_name_and_workspace_catalog(tmp_path):
     from overspec.core.profiles import select_profile, toggle_profiles, use_profile
 
     project, home = tmp_path / "project", tmp_path / "home"
     over = project / "openspec/.over"
     write(over, "profile-default/traits.toml")
     write(home, "profile-default/traits.toml")
-    write(home, "profile-strict/traits.toml")
+    write(over, "profile-strict/traits.toml")
     config = write(project, "openspec/config.yaml", "schema: spec-driven\n")
-    assert select_profile(project, home) == ("default", over / "profile-default")
+    assert select_profile(project, home) == "default"
     toggle_profiles(home)
     use_profile(project, home, "strict")
-    assert select_profile(project, home) == ("strict", home / "profile-strict")
+    assert select_profile(project, home) == "strict"
     write(over, "config.toml", '[vars]\nlanguage = "Python"\n')
     use_profile(project, home, "default")
-    assert select_profile(project, home)[0] == "default"
-    assert select_profile(project, home)[1] == over / "profile-default"
+    assert select_profile(project, home) == "default"
     assert 'language = "Python"' in (over / "config.toml").read_text()
     assert config.read_text() == "schema: spec-driven\n"
     assert (over / "profile-default").exists()
@@ -94,9 +93,9 @@ def test_local_only_and_invalid_selection(tmp_path):
     from overspec.core.profiles import select_profile
 
     project, home = tmp_path / "project", tmp_path / "home"
-    assert select_profile(project, home) == (None, None)
+    assert select_profile(project, home) == "default"
     write(home, "profile-strict/trait.toml")
-    assert select_profile(project, home) == (None, None)
+    assert select_profile(project, home) == "default"
     write(home, "config.toml", '[profiles]\nenabled=true\nselected="missing"\n')
     with pytest.raises(ValueError, match="missing"):
         select_profile(project, home)
@@ -121,8 +120,10 @@ def test_default_user_home_is_overspec_and_ignores_other_apps(tmp_path, monkeypa
     project = Project(root)
     effective, _, selection, _ = project.inventory()
     assert project.home == user / ".overspec"
-    assert selection == ["default", str(trait.parent)]
-    assert [t.name for t in effective] == ["shared"]
+    assert selection == "default"
+    assert "shared" not in {t.name for t in effective}
+    assert "tdd" in {t.name for t in effective}
+    assert trait.read_text().startswith("[[trait]]")
     assert project.over == root / "openspec/.over"
     assert project.state == root / "openspec/.over/.state.json"
     toggle_profiles(project.home)

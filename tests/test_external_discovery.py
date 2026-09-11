@@ -23,7 +23,7 @@ def test_categories_fall_back_independently(tmp_path):
     client.add(root)
     catalog = discover(tmp_path / "home", client)
     assert [[p.name for p in layer] for layer in catalog.layers] == [["trait-x.toml"]]
-    assert catalog.profiles["default"] == root / "openspec/.over/profile-default"
+    assert catalog.profiles["default"] == [root / "openspec/.over/profile-default"]
     assert "inactive" in catalog.profiles
     (root / "over-profiles").mkdir()
     client.add(root)
@@ -65,7 +65,7 @@ def test_invalid_selected_layout_does_not_fall_back(tmp_path):
         discover(tmp_path / "home", client)
 
 
-def test_priority_replaces_whole_profiles_and_reports_inactive_ids(tmp_path):
+def test_priority_retains_profile_contributors_and_reports_inactive_ids(tmp_path):
     from overspec.core.external.discovery import discover as load
 
     client = Client()
@@ -77,11 +77,11 @@ def test_priority_replaces_whole_profiles_and_reports_inactive_ids(tmp_path):
     home = tmp_path / "home"
     assert (
         discover(home, client).profiles["default"]
-        == tmp_path / "b/over-profiles/profile-default"
+        == [tmp_path / "a/over-profiles/profile-default", tmp_path / "b/over-profiles/profile-default"]
     )
     configure(home, {"marker": "marker", "order": ["b" * 64, "a" * 64, "c" * 64]})
     catalog = load(home, client_factory=lambda _: client)
-    assert catalog.profiles["default"] == tmp_path / "a/over-profiles/profile-default"
+    assert catalog.profiles["default"] == [tmp_path / "b/over-profiles/profile-default", tmp_path / "a/over-profiles/profile-default"]
     assert [x[0].parts[-3] for x in catalog.layers] == ["b", "a"]
     assert catalog.excluded[-1]["source_id"] == "c" * 64
     assert len(catalog.profile_origins["default"]) == 2

@@ -13,8 +13,8 @@ dependencies = [
     "ruamel-yaml>=0.18",
     "tomlkit>=0.13",
     "typer>=0.27.2",
-    "zuat",
-    "zuu",
+    "zuat @ git+https://github.com/ZackaryW/zuat@ae26293ace7e2794893daedf3205949741584206",
+    "zuu @ git+https://github.com/ZackaryW/zuu@be05a93f6726e54568e11181d805eccd7dcaf4af",
 ]
 
 [project.scripts]
@@ -41,10 +41,6 @@ packages = ["src/overspec"]
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src", "tests", "pyproject.toml", "README.md", "uv.lock", "hatch_build.py"]
-
-[tool.uv.sources]
-zuat = { git = "https://github.com/ZackaryW/zuat" }
-zuu = { git = "https://github.com/ZackaryW/zuu" }
 
 [dependency-groups]
 dev = [

@@ -4,10 +4,10 @@
 
 | Item | Meaning |
 | --- | --- |
-| `~/.overspec` | User profiles, named selection, and profile activation state; `--home` or `OVERSPEC_HOME` can override it |
+| `~/.overspec` | User settings: named selection, activation, Saucepan connection/order, and configured vars; `--home` or `OVERSPEC_HOME` can override it |
 | `openspec/.over` | The owning project's trait sources and optional variables |
-| `profile-default` | Default profile; the project's same-name directory replaces the user default |
-| Loose `trait*.toml` | Local declarations outside profile trees, layered over the chosen profile |
+| `profile-default` | Packaged base; repository and workspace same-name traits override individual declarations |
+| Loose `trait*.toml` | Declarations outside profile trees, layered after their own source's selected profile |
 | `.vars.toml` | Optional persistent variables, eligible for Git tracking |
 | `.current.toml` | Mutable local variables, initialized when missing and ignored by basename |
 | `.state.json` | One current compilation, synchronized resolution, and sync receipt |
@@ -104,16 +104,27 @@ directories. Acquisition is explicit work in Saucepan, outside init/sync/preview
 
 Each acquired repository independently selects `over-traits/` and `over-profiles/`
 before their `openspec/.over/` fallbacks. Existing empty top-level directories
-suppress fallback; invalid selected content fails. Only the winning selected
-profile is parsed. Acquired variables and skills do not enter the consuming project.
+suppress fallback; invalid selected content fails. All contributors to the selected name are parsed; inactive profile bodies are not. Acquired variables and skills do not enter the consuming project.
 
-Profile priority is external sources, user, project. Trait priority is selected
-profile, each external standalone layer, user standalone, project standalone.
-Later same-name declarations replace completely; duplicates within one layer fail.
-Inspect `trait resolve --explain --json` for origins, revisions and exclusions,
-or `profile list --json` for profile winners while mode is on. Effective compiled
-changes need update; runtime-only changes need sync. Saved commands/details do
-not call Saucepan. Existing legacy profile pull/update remains separate.
+Low-to-high source priority is packaged default, each acquired repository, then
+workspace. Within each repository/workspace, selected-profile declarations precede
+standalone declarations. A higher repository profile beats a lower repository's
+standalone trait. Same-name profiles extend trait-by-trait, preserving other names;
+matching names replace whole declarations. Duplicates inside one profile contributor
+or standalone layer fail. Named profiles do not implicitly inherit packaged default.
+
+The installed default needs no clone, acquisition, or profile copy. The authored
+source is `openspec/.over/profile-default`; released wheels carry those documents.
+Before init, `trait resolve --explain` reports unevaluated inventory without writes.
+Init still creates normal state/current files. Missing packaged resources are errors.
+Inspect `trait resolve --explain --json` for package/repository/workspace provenance
+and `profile list --json` for ordered `contributors` while mode is on. Only activate
+is available while off; enabled mode adds use/list. Direct user-home content and
+legacy profile pull/update commands are removed with no compatibility aliases.
+Existing files stay untouched; relocate/acquire sources deliberately. Top-level
+update remains the compilation refresh command. Changed effective compiled inputs
+or selected name require update; ordinary/runtime-only edits need sync. Saved
+commands/details do not load the package or call Saucepan.
 
 ## Choosing commands and handling diagnostics
 
