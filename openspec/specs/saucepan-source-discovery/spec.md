@@ -103,36 +103,37 @@ inactive and SHALL be reported without importing them outside scope.
 
 ### Requirement: External profile catalog and standalone layers
 
-Every discovered external profile SHALL be available as a candidate under its
-profile name. Same-name profiles across external repositories SHALL use source
-priority to select one whole profile, without merging profile directories.
-Existing user-level profiles SHALL override external candidates, and project
-profiles SHALL override both. Unselected profile contents SHALL not be evaluated
-or parsed merely because a repository was discovered.
+Every discovered external profile SHALL contribute under its profile name. Same-name profiles across repositories SHALL remain ordered contributors rather than selecting one whole directory. Only selected-name declarations SHALL be parsed; other profile contents SHALL not be evaluated or parsed merely because a repository was discovered. Workspace contributors SHALL follow acquired repositories, and packaged default SHALL precede them when default is selected. User-home authored profiles and legacy remote copies SHALL not enter this catalog.
 
-Standalone traits SHALL contribute independently of profile mode. Trait layers
-SHALL be applied from lowest to highest priority: effective selected profile,
-external standalone sources in source order, user-authored standalone traits,
-then project-local standalone traits. Duplicate names within one selected profile,
-one repository's standalone layer, or one authored layer SHALL remain errors;
-cross-layer collisions SHALL replace the complete declaration before references
-are validated and evaluation begins.
+Standalone traits SHALL contribute independently of profile mode. For each repository in stable source order, its selected-profile layer SHALL apply first and its standalone layer second, before moving to the next repository. Workspace selected-profile and standalone layers SHALL apply last in that order. Duplicate names within one profile contributor or one standalone layer SHALL remain errors; collisions across layers SHALL replace complete declarations before reference validation and evaluation. Missing or empty profile contributors SHALL not erase lower names. Categories SHALL retain independent top-level-first lookup, including empty top-level directories suppressing fallback.
 
 #### Scenario: Default without local profile files
-- **WHEN** mode is off and only a scoped external repository provides profile-default
-- **THEN** its default profile and applicable standalone layers contribute without creating a user or project profile copy
+- **WHEN** mode is off and a scoped repository provides profile-default
+- **THEN** its declarations extend and override packaged default without creating user or workspace profile copies
 
 #### Scenario: Local profile overrides external default
-- **WHEN** a project profile-default exists alongside external default candidates
-- **THEN** the project profile replaces them as the selected profile while external standalone traits still participate
+- **WHEN** workspace profile-default exists alongside external default contributors
+- **THEN** workspace same-name declarations win and nonconflicting external and packaged names survive
 
 #### Scenario: Inactive malformed profile
 - **WHEN** a discovered non-default profile has malformed traits and mode is off
-- **THEN** its declarations are not loaded and ordinary default composition remains available
+- **THEN** its declarations are not loaded and default composition remains available
 
 #### Scenario: Same source duplicate
-- **WHEN** two files within one external standalone layer declare the same trait name
-- **THEN** loading fails with both origins rather than choosing a file accidentally
+- **WHEN** two files within one repository's standalone layer declare the same name
+- **THEN** loading fails with both origins instead of choosing a file accidentally
+
+#### Scenario: Higher repository profile overrides lower standalone
+- **WHEN** A precedes B and A's standalone layer and B's selected profile declare the same name
+- **THEN** B wins regardless of whether A's standalone layout is top-level or fallback
+
+#### Scenario: Standalone overrides its own profile
+- **WHEN** a repository declares beta in its selected profile and its standalone layer
+- **THEN** its standalone beta wins within that source, subject to any higher source override
+
+#### Scenario: Multiple default extensions
+- **WHEN** two repositories extend default with overlapping and disjoint names
+- **THEN** all disjoint names survive, overlapping names use stable source priority, and changing view serialization order does not change the result
 
 ### Requirement: Source provenance and project lifetimes
 
@@ -164,28 +165,22 @@ repository variable files SHALL not become variable layers of the consuming proj
 
 ### Requirement: Read-only connection and consistent publication
 
-Connecting a user home SHALL be independent of the profile-mode toggle. With no
-connection configured, existing local and legacy remote behavior SHALL remain
-available without requiring Saucepan. Once connected, unavailable dependencies,
-invalid scope credentials, unsupported response formats, malformed source data,
-or missing consumed artifacts SHALL be explicit failures rather than an empty
-successful inventory. An authenticated empty view SHALL be a valid empty inventory.
+Connecting a user home SHALL remain independent of profile mode. With no connection configured, packaged default and workspace composition SHALL remain available without Saucepan. Once connected, unavailable dependencies, invalid scope credentials, unsupported formats, malformed selected source data, or missing consumed artifacts SHALL be explicit failures rather than an empty successful inventory or a silent fallback to packaged content. An authenticated empty view SHALL be a valid inventory with no repository contributions.
 
-Discovery SHALL not initialize/register Saucepan, acquire or refresh sources,
-mirror files, install skills, change app filters, or persist selection while
-loading. Source/view/config changes detected between preparation and publication
-SHALL reject inconsistent compilation or sync publication. No-op sync SHALL retain
-the existing byte/mtime guarantees. Existing config-first/state-second partial
-failure diagnostics SHALL remain truthful.
+Discovery SHALL not initialize/register Saucepan, acquire or refresh sources, mirror files, install skills, change app filters, or persist selection. Source/view/config changes detected between preparation and publication SHALL reject inconsistent compilation or synchronization, including changes to the set or order of selected-profile contributors. No-op synchronization SHALL retain existing byte/mtime guarantees. Existing config-first/state-second partial failure diagnostics SHALL remain truthful.
 
 #### Scenario: Connected versus unconfigured home
-- **WHEN** an unconfigured user home is used on a machine without Saucepan
-- **THEN** local-only operations remain available; configuring an unavailable Saucepan connection instead produces an actionable error
+- **WHEN** an unconfigured user home is used without Saucepan
+- **THEN** packaged default and workspace operations remain available; an explicitly configured unavailable connection instead produces an actionable error
 
 #### Scenario: Scoped view changes during sync
-- **WHEN** acquired entries, filters, current source selection, or source priority change after preparation and before publication
-- **THEN** the relevant publication is rejected with retry guidance and does not claim to have committed a consistent new result
+- **WHEN** acquired entries, filters, current source selection, or priority change after preparation and before publication
+- **THEN** publication is rejected with retry guidance and does not claim a consistent new result
 
 #### Scenario: Preview is not acquisition
-- **WHEN** trait explanation or sync preview discovers external content
-- **THEN** it reads the scoped catalog and consumed files without changing sources, app registration, profile directories, variable files, or project state
+- **WHEN** explanation or sync preview discovers package and external content
+- **THEN** it reads sources without changing app registration, source storage, profile directories, variable files, or project state
+
+#### Scenario: Contributor changes during publication
+- **WHEN** a repository adds or removes a selected-profile contributor after preparation
+- **THEN** publication rejects stale source evidence even if a former whole-profile winner still exists

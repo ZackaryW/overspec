@@ -25,33 +25,37 @@ an application traceback.
 
 ### Requirement: Profile commands appear only when profile mode is enabled
 
-The profile group SHALL expose only `activate` while profile mode is off. Named selection, listing, retrieval, and refresh commands SHALL be absent from help and completion and unavailable for direct dispatch. While mode is on, the group SHALL additionally expose `use NAME`, `list`, `pull`, and `update`; activate SHALL remain available to toggle mode off. `activate` SHALL accept no name and SHALL report the resulting mode in both terminal and structured output. The profile surface SHALL reflect the chosen user home's current state on every invocation, including repeated invocations in one process. `--home` at any supported common-option position SHALL control the same toggle and command availability.
+The profile group SHALL expose only `activate` while mode is off. Named selection and listing SHALL be absent from help and completion and unavailable for direct dispatch. While mode is on, it SHALL additionally expose `use NAME` and `list`; activate SHALL remain available. Legacy profile `pull` and `update` SHALL be absent and unavailable in both modes without compatibility aliases. The ordinary top-level `overspec update` compilation command SHALL remain available. `activate` SHALL accept no name and report resulting mode in terminal and structured output. The surface SHALL reflect the chosen user home's current state on every invocation, including repeated invocations in one process. `--home` at every supported common-option position SHALL control the same toggle and command availability.
 
-Named-management core operations SHALL also reject use while mode is off. Ordinary init, update, sync, static trait resolution, retained runtime resolution, and detail lookup SHALL remain available. No removed profile flags or compatibility aliases SHALL bypass the off-state command boundary.
+Named-management core operations SHALL also reject use while mode is off. Ordinary init, update, sync, static trait resolution, saved runtime resolution, and detail lookup SHALL remain available. Removed flags or aliases SHALL not bypass the off-state boundary. Listing in enabled mode SHALL include default from the installed package and show each profile's ordered contributors, active/saved selection, and source kind/location rather than implying one winning directory. Package contributors SHALL identify the distribution and version; repository contributors SHALL identify source and revision; workspace contributors SHALL identify their paths. Contributor reporting SHALL not require parsing inactive profile documents.
 
 #### Scenario: Default command surface remains small
-- **WHEN** mode is off and the user requests profile help or completion
+- **WHEN** mode is off and help or completion is requested
 - **THEN** activate is the only available profile subcommand
 
 #### Scenario: Disabled command cannot be invoked directly
-- **WHEN** mode is off and a caller invokes profile use, list, pull, or update directly
+- **WHEN** mode is off and a caller invokes profile use or list
 - **THEN** the command is unavailable and no activation, selection, network, or config mutation occurs
 
 #### Scenario: Activation expands the next invocation
-- **WHEN** the user toggles mode on, invokes profile help, then toggles mode off and invokes help again
-- **THEN** the enabled management commands appear only in the middle invocation, including when these calls share a CLI process
+- **WHEN** mode is toggled on, help is requested, then mode is toggled off and help requested again
+- **THEN** use and list appear only in the middle invocation, including within one process
 
 #### Scenario: Explicit home selects the feature state
-- **WHEN** two user homes have different profile mode states and the invocation selects one through a supported --home position
-- **THEN** command availability and all resulting state reads and writes use that chosen home
+- **WHEN** two homes have different mode states and a supported --home position selects one
+- **THEN** availability and resulting reads and writes use that home
 
 #### Scenario: Read profiles and preview changes
-- **WHEN** the user lists profiles with mode enabled or previews synchronization in either mode
-- **THEN** profiles show their scope, activation, and location, an empty profile inventory has an explicit message, and preview separates its summary, complete candidate, and diff
+- **WHEN** profiles are listed with mode enabled or sync is previewed in either mode
+- **THEN** profiles report ordered contributors and selection, default is present without acquisitions, and preview separates summary, complete candidate, and diff
 
 #### Scenario: Script consumes output
-- **WHEN** the user supplies --json or runs runtime trait resolution
-- **THEN** JSON is parseable without decorations and runtime guidance remains literal, with the same IDs and markers
+- **WHEN** --json is supplied or runtime trait resolution is run
+- **THEN** JSON remains parseable without decorations and runtime guidance remains literal with the same IDs and markers
+
+#### Scenario: Removed acquisition interface
+- **WHEN** profile pull or profile update is requested in either mode
+- **THEN** dispatch fails without network or filesystem mutation, while top-level update remains usable
 
 ### Requirement: Explicit project target
 
