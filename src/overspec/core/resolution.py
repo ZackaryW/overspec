@@ -4,10 +4,10 @@ import shlex
 
 from . import storage
 from .change_scope import change_root
-from .variables import file_layers
+from .trait_system.evaluator import evaluate, validate_references
 from .trait_system.rendering import variables
 from .trait_system.sources import parse_trait
-from .trait_system.evaluator import evaluate, validate_references
+from .variables import file_layers
 
 
 def contributions(bundle, identity):
@@ -111,9 +111,25 @@ def explain(bundle):
                 "status": status,
                 "has_details": bool(data.get("details")),
                 "decision": state["decisions"].get(name),
+                **(
+                    {"provenance": record["provenance"]}
+                    if "provenance" in record
+                    else {}
+                ),
             }
         )
     result.extend({**record, "status": "overridden"} for record in bundle["overridden"])
+    result.extend(
+        {
+            "name": record["source_id"],
+            "origin": "saucepan:" + record["source_id"],
+            "phase": "source",
+            "attach": "-",
+            "status": "excluded",
+            **record,
+        }
+        for record in bundle.get("sources", [])
+    )
     return result
 
 

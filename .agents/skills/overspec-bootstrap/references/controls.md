@@ -87,6 +87,34 @@ and can be read with `overspec trait show <name> --details`, optionally with
 operand reads another list for overlap. Equality does not dereference `$name`.
 There are no regex, glob, generic expression, or static variable predicates.
 
+## Shared Saucepan sources
+
+The optional `[sources.saucepan]` table in the chosen user home's `config.toml`
+connects independently of profile mode. It requires `marker`, a private registered
+`overspec` JSON token file. Optional `binary` selects the executable; both paths
+are home-relative or absolute. Optional `order` contains unique canonical source
+IDs, low to high; unlisted eligible sources sort first by ID. Without the table,
+no Saucepan dependency is required. A configured connection must succeed.
+
+Inspect scope using Saucepan's public API. Whole-current-root artifacts must be
+visible in the `overspec` view. Historical/folder-only/pinned-only content and
+current snapshots touched only by another app are excluded with acquisition
+guidance. Do not repair discovery by scanning internal storage or copying cache
+directories. Acquisition is explicit work in Saucepan, outside init/sync/preview.
+
+Each acquired repository independently selects `over-traits/` and `over-profiles/`
+before their `openspec/.over/` fallbacks. Existing empty top-level directories
+suppress fallback; invalid selected content fails. Only the winning selected
+profile is parsed. Acquired variables and skills do not enter the consuming project.
+
+Profile priority is external sources, user, project. Trait priority is selected
+profile, each external standalone layer, user standalone, project standalone.
+Later same-name declarations replace completely; duplicates within one layer fail.
+Inspect `trait resolve --explain --json` for origins, revisions and exclusions,
+or `profile list --json` for profile winners while mode is on. Effective compiled
+changes need update; runtime-only changes need sync. Saved commands/details do
+not call Saucepan. Existing legacy profile pull/update remains separate.
+
 ## Choosing commands and handling diagnostics
 
 | Situation | Action |

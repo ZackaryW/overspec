@@ -74,8 +74,10 @@ def parse_document(text: str, origin: str, registry=None) -> list[Trait]:
         raise ValueError(f"{origin}: {exc}") from exc
 
 
-def compose(profile: list[Trait], local: list[Trait]):
-    for layer in (profile, local):
+def compose(*layers: list[Trait]):
+    effective = {}
+    overridden = []
+    for layer in layers:
         seen = {}
         for trait in layer:
             if trait.name in seen:
@@ -83,7 +85,8 @@ def compose(profile: list[Trait], local: list[Trait]):
                     f"Duplicate {trait.name}: {seen[trait.name]} and {trait.origin}"
                 )
             seen[trait.name] = trait.origin
-    effective = {t.name: t for t in profile}
-    overridden = [effective[t.name] for t in local if t.name in effective]
-    effective.update({t.name: t for t in local})
+        for trait in layer:
+            if trait.name in effective:
+                overridden.append(effective[trait.name])
+            effective[trait.name] = trait
     return sorted(effective.values(), key=lambda t: PHASES.index(t.phase)), overridden

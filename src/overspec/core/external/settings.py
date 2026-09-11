@@ -19,7 +19,7 @@ class Connection:
 def connection(home: Path) -> Connection | None:
     sources = settings(home).get("sources", {})
     if not isinstance(sources, dict):
-        raise ValueError("sources.saucepan must belong to a sources table")
+        raise ValueError("sources.saucepan must belong to a sources table")  # noqa: TRY004 -- CLI validation contract
     if "saucepan" not in sources:
         return None
     data = sources["saucepan"]

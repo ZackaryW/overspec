@@ -29,7 +29,9 @@ def trait_files(root: Path, *, local: bool = False) -> list[Path]:
 
     def visit(directory):
         for path in sorted(directory.iterdir()):
-            if path.name == ".state" or (local and path.name.startswith("profile-")):
+            if path.name in (".state", ".git") or (
+                local and path.name.startswith("profile-")
+            ):
                 continue
             plan = ConfinedPath(path.relative_to(root).as_posix()).inspect(root)
             if plan.state == TargetState.DIRECTORY:
@@ -104,8 +106,11 @@ def profile_directory(root, name):
     return plan.target if plan.state == TargetState.DIRECTORY else None
 
 
-def resolve_profile(project, home, name):
+def resolve_profile(project, home, name, *, external=None):
+    from .external.discovery import discover
     from .remotes import remote_profile
+
+    external = discover(home).profiles if external is None else external
 
     if project.exists():
         ConfinedPath("openspec/.over").inspect(project)
@@ -116,12 +121,12 @@ def resolve_profile(project, home, name):
     remote = remote_profile(home, name)
     if authored and remote:
         raise ValueError(f"Local/remote profile name collision: {name}")
-    return authored or remote
+    return authored or remote or external.get(name)
 
 
-def select_profile(project: Path, home: Path):
+def select_profile(project: Path, home: Path, *, external=None):
     name, explicit = selected_name(home)
-    directory = resolve_profile(project, home, name)
+    directory = resolve_profile(project, home, name, external=external)
     if directory is None:
         if explicit:
             raise ValueError(f"Selected profile is missing: {name}")

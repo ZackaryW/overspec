@@ -23,3 +23,17 @@ def source(project, text, file="traits.toml"):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return path
+
+
+@pytest.fixture
+def external(project, tmp_path, monkeypatch):
+    from test_saucepan_adapter import Client
+    from test_saucepan_settings import configure
+
+    client = Client()
+    configure(project.home, {"marker": "marker"})
+    (project.home / "marker").write_text("secret-marker")
+    monkeypatch.setattr(
+        "overspec.core.external.adapter.create_client", lambda _: client
+    )
+    return client, tmp_path / "external"

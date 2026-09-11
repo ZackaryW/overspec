@@ -2,6 +2,7 @@
 
 import difflib
 import os
+from dataclasses import replace
 from pathlib import Path
 
 from zuu.case2 import FileSystemSnapshot
@@ -9,10 +10,10 @@ from zuu.case5 import ConfinedPath
 
 from . import storage
 from .profiles import select_profile, settings, trait_files
-from .variables import file_layers
 from .trait_system.evaluator import evaluate, validate_references
 from .trait_system.rendering import VARIABLE, variables
 from .trait_system.sources import compose, parse_document
+from .variables import file_layers
 
 
 class Project:
@@ -24,9 +25,14 @@ class Project:
         self.over = self.root / "openspec/.over"
         self.state = self.root / storage.STATE_PATH
 
-    def inventory(self):
+    def source_inputs(self):
+        from .external.discovery import discover
+
         ConfinedPath("openspec/.over").inspect(self.root)
-        selected, directory = select_profile(self.root, self.home)
+        catalog = discover(self.home)
+        selected, directory = select_profile(
+            self.root, self.home, external=catalog.profiles
+        )
         profile_files = trait_files(directory) if directory else []
         local_files = trait_files(self.over, local=True)
         profile_identities = {(p.stat().st_dev, p.stat().st_ino) for p in profile_files}
@@ -35,7 +41,30 @@ class Project:
             for p in local_files
             if (p.stat().st_dev, p.stat().st_ino) not in profile_identities
         ]
-        files = profile_files + local_files
+        layers = [
+            profile_files,
+            *catalog.layers,
+            trait_files(self.home, local=True),
+            local_files,
+        ]
+        return catalog, selected, directory, layers
+
+    def source_evidence(self, inputs=None):
+        catalog, selected, directory, layers = inputs or self.source_inputs()
+        paths = list(dict.fromkeys(p for layer in layers for p in layer))
+        for root in (self.home, self.over):
+            if root.exists() and storage.read_bytes(root, "config.toml") is not None:
+                paths.append(root / "config.toml")
+        return (
+            selected,
+            str(directory),
+            catalog.evidence,
+            FileSystemSnapshot.capture(paths) if paths else None,
+        )
+
+    def inventory(self, *, inputs=None):
+        catalog, selected, directory, layers = inputs or self.source_inputs()
+        files = list(dict.fromkeys(p for layer in layers for p in layer))
         observed = FileSystemSnapshot.capture(files) if files else None
         contents = (
             {observed.roots[e.root_index]: e.content for e in observed.entries}
@@ -45,12 +74,14 @@ class Project:
 
         def parse(paths):
             return [
-                t
+                replace(t, provenance=catalog.describe(p)[1])
                 for p in paths
-                for t in parse_document(contents[p].decode("utf-8"), str(p))
+                for t in parse_document(
+                    contents[p].decode("utf-8"), catalog.describe(p)[0]
+                )
             ]
 
-        effective, overridden = compose(parse(profile_files), parse(local_files))
+        effective, overridden = compose(*(parse(paths) for paths in layers))
         validate_references(effective)
         base = variables(
             self.configured_variables(), *file_layers(self.root, "openspec/.over/")
@@ -58,7 +89,7 @@ class Project:
         return (
             effective,
             overridden,
-            [selected, str(directory) if directory else None],
+            [selected, catalog.describe(directory)[0] if directory else None],
             base,
         )
 
@@ -87,7 +118,10 @@ class Project:
         }
         return storage.digest(
             {
-                "traits": [t.record() for t in compiled],
+                "traits": [
+                    {k: v for k, v in t.record().items() if k != "provenance"}
+                    for t in compiled
+                ],
                 "profile": selection,
                 "vars": {k: base[k] for k in sorted(keys) if k in base},
             }
@@ -99,7 +133,9 @@ class Project:
         observed_state = storage.read_bytes(self.root, storage.STATE_PATH)
         state = storage.read_state(self.root, missing_ok=True)
         variable_evidence = self.variable_evidence()
-        traits, _, selection, base = self.inventory()
+        sources = self.source_inputs()
+        source_evidence = self.source_evidence(sources)
+        traits, _, selection, base = self.inventory(inputs=sources)
         inputs = variables(base, values or {})
         signature = self.compatibility(traits, selection, base)
         result = evaluate(
@@ -117,6 +153,8 @@ class Project:
         }
 
         def recheck():
+            if self.source_evidence() != source_evidence:
+                raise ValueError("Sources changed during compilation; retry update")
             if self.variable_evidence() != variable_evidence:
                 raise ValueError(
                     "Variable files changed during compilation; retry update"
@@ -130,8 +168,9 @@ class Project:
         storage.save_state(self.root, state, expected=observed_state, recheck=recheck)
         return state["compilation"]["id"]
 
-    def prepare(self, *, values=None):
-        traits, overridden, selection, base = self.inventory()
+    def prepare(self, *, values=None, inputs=None):
+        sources = inputs or self.source_inputs()
+        traits, overridden, selection, base = self.inventory(inputs=sources)
         saved = storage.read_state(self.root)["compilation"]
         if saved is None:
             raise ValueError("Missing compilation; run init/update")
@@ -159,20 +198,20 @@ class Project:
                     "origin": t.origin,
                     "phase": t.phase,
                     "attach": t.attach,
+                    **({"provenance": t.provenance} if t.provenance else {}),
                 }
                 for t in overridden
             ],
             "variables": inputs,
             "runtime_defaults": variables(self.configured_variables(), values or {}),
             "static": result,
+            "sources": sources[0].excluded,
         }
 
-    def evidence(self, *, config=True):
+    def evidence(self, *, config=True, inputs=None):
         """Observe inventory and publication inputs without reevaluating assertions."""
-        selection, directory = select_profile(self.root, self.home)
-        paths = (trait_files(directory) if directory else []) + trait_files(
-            self.over, local=True
-        )
+        sources = self.source_evidence(inputs)
+        paths = []
         for root, relative in (
             (self.root, "openspec/.over/config.toml"),
             (self.root, storage.STATE_PATH),
@@ -196,8 +235,7 @@ class Project:
             paths.append(self.home / "config.toml")
         storage.read_state(self.root)
         return (
-            selection,
-            str(directory),
+            sources,
             FileSystemSnapshot.capture(paths),
             self.variable_evidence(),
         )
@@ -207,12 +245,13 @@ class Project:
         from .resolution import contributions
 
         path = config_target(self.root)
-        before = self.evidence()
-        sources_before = self.evidence(config=False)
+        inputs = self.source_inputs()
+        before = self.evidence(inputs=inputs)
+        sources_before = self.evidence(config=False, inputs=inputs)
         observed_state = storage.read_bytes(self.root, storage.STATE_PATH)
         state = storage.read_state(self.root)
         original = path.read_bytes().decode("utf-8")
-        bundle = self.prepare(values=values)
+        bundle = self.prepare(values=values, inputs=inputs)
         identity = storage.digest(bundle)
         candidate, changed = project_yaml(original, contributions(bundle, identity))
         result = {

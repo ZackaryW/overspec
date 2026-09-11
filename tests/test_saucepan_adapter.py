@@ -151,6 +151,21 @@ def test_real_sdk_missing_executable(tmp_path):
     from overspec.core.external.adapter import create_client, repositories
     from overspec.core.external.settings import Connection
 
-    client = create_client(Connection(tmp_path / "marker", tmp_path / "missing.exe", ()))
+    client = create_client(
+        Connection(tmp_path / "marker", tmp_path / "missing.exe", ())
+    )
     with pytest.raises(ValueError, match="executable"):
+        repositories(client)
+
+
+@pytest.mark.parametrize(
+    "field,value", [("folder", 1), ("source", None), ("source_id", "not-canonical")]
+)
+def test_malformed_artifact_is_not_silently_excluded(tmp_path, field, value):
+    from overspec.core.external.adapter import repositories
+
+    client = Client()
+    artifact = client.add(tmp_path)
+    artifact[field] = value
+    with pytest.raises(ValueError, match="malformed artifact"):
         repositories(client)

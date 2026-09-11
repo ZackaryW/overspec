@@ -19,6 +19,9 @@ changes and artifacts; Overspec composes guidance into its configuration.
    [references/controls.md](references/controls.md) for file scope, precedence,
    lifetimes, and troubleshooting. Explain that `.vars.toml` is optional shared
    data and `.current.toml` is local state before setting them up.
+   Inspect the chosen user home's optional `[sources.saucepan]` connection when
+   present. Read the shared-source section of the controls reference before
+   diagnosing missing external profiles; discovery does not acquire repositories.
 3. With no compilation, run `overspec init --project <root>` within the requested
    setup scope. With existing compilation, use `overspec init --setup-only` for
    missing current files or new changes. Init discovers active changes; append

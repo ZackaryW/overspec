@@ -26,8 +26,9 @@ through `--show-completion` and `--install-completion`.
 ## Start with an existing OpenSpec project
 
 This repository provides its reusable profile at `openspec/.over/profile-default`.
-Copy that directory into your project's `openspec/.over/`. Profile mode is off
-by default; ordinary setup needs no activation:
+Use it through the user-level Saucepan connection below, or copy that directory
+into your project's `openspec/.over/`. Profile mode is off by default; ordinary
+setup needs no activation:
 
 ```sh
 overspec init --project /path/to/project
@@ -61,6 +62,75 @@ Other configuration values, including unknown keys and operation siblings, survi
 Preview prints the target, candidate YAML, diff, resolution ID, and whether config
 would change. Add `--json` for structured output.
 
+## Shared sources through Saucepan
+
+Install the optional SDK with `uv sync --extra saucepan` in this checkout and
+install the Saucepan 0.5 executable separately. The SDK is locked to the inspected
+current-API revision. Overspec does not install or initialize Saucepan.
+Register the `overspec` app in Saucepan, acquire whole repositories under that
+app, and save its returned JSON token in a private marker file. Then add this
+table to the chosen user home's `config.toml` (normally `~/.overspec/config.toml`):
+
+```toml
+[sources.saucepan]
+marker = ".saucepanhash"
+order = []
+# binary = "bin/saucepan" # Optional executable path; .exe on Windows
+```
+
+Marker and executable paths may be absolute or relative to that user home.
+Without `binary`, the SDK uses Saucepan's shared user-level executable. Keep the
+marker private; it belongs to the user environment, not project Git history.
+The connection works with profile mode off. Homes without this table need no SDK
+or Saucepan executable. A configured but unavailable connection fails explicitly.
+
+Every eligible repository in the authenticated `overspec` scope contributes.
+Overspec uses public returned paths, without copying acquired profiles into
+`~/.overspec` or creating project profile directories. Repository layouts are:
+
+| Category | First choice | Fallback when first choice is absent |
+| --- | --- | --- |
+| Standalone traits | `over-traits/**/trait*.toml` | `openspec/.over/**/trait*.toml`, excluding profiles/state |
+| Profiles | `over-profiles/profile-*` | `openspec/.over/profile-*` |
+
+Each category chooses independently. An empty top-level directory intentionally
+disables that category's fallback. Invalid selected paths or declarations are
+errors. Profiles are immediate directories; selected profile traits are recursive.
+Inactive profile declarations are not parsed. Acquired variable files and skills
+are not imported.
+
+`order` lists canonical 64-character Saucepan source IDs from low to high priority.
+Unlisted eligible sources come first, sorted by source ID. Later sources win;
+refresh times never determine precedence. An absent/filtered listed source remains
+an inactive priority entry. Use Saucepan's scoped view or Overspec's JSON
+explanations to inspect IDs.
+
+Profile candidates use external source order, then user profiles, then project
+profiles. Each winner replaces the whole same-name profile. Trait declarations
+apply in this order: selected profile, external standalone sources, user standalone
+traits, project standalone traits. Later same-name declarations replace every field;
+duplicates inside one layer are errors. User standalone `trait*.toml` files are
+recursive below the chosen home, excluding profile, `.state`, and `.git` trees.
+
+Automatic discovery uses only each source's **current whole-root artifact visible
+in the Overspec app view**. Historical, folder-only, or pinned-only acquisitions
+are excluded with guidance. If another app advances shared current, reacquire that
+whole current root under `overspec` before it contributes. Sync, previews, and
+listing never acquire, refresh, mirror, or change Saucepan filters. Existing
+`profile pull/update` commands retain their separate retrieval backend.
+
+Run `overspec update` when the effective profile or compile-time declarations
+change, then preview and sync. Ordinary/runtime-only refreshes need sync. Saved
+runtime commands and details continue to work without Saucepan; they retain the
+synchronized definitions and use the consuming project's variable rules.
+`overspec trait resolve --explain --json` reports source provenance and exclusions;
+`profile list --json` reports external profile candidates when profile mode is on.
+
+To run the real SDK/executable integration test, set
+`OVERSPEC_TEST_SAUCEPAN_BINARY` to an installed executable and run
+`uv run --extra saucepan pytest tests/test_saucepan_public_integration.py`.
+The test uses an explicit isolated test store and never modifies the real user store.
+
 ## Sources and activation
 
 ```text
@@ -90,8 +160,9 @@ revisions under `~/.overspec/.state/remotes/`. Overspec does not automatically r
 or migrate `~/.over`, which may belong to another application. Project sources and
 resolution state remain under `openspec/.over/`.
 While mode is **off**, Overspec uses `profile-default` automatically. A project
-default completely replaces a user default. Loose local traits then override
-same-name profile traits. Other named profiles and saved/environment selections
+default completely replaces a user default, which replaces external defaults.
+Standalone traits then override same-name profile traits in the order above.
+Other named profiles and saved/environment selections
 are ignored. Without a default, loose local traits alone still work. A previously
 retrieved user default remains usable offline.
 

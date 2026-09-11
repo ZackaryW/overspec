@@ -1,6 +1,7 @@
 """Authenticated read-only Saucepan API boundary; no acquisition or mirroring."""
 
 import hashlib
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -23,7 +24,7 @@ def create_client(connection):
 def call(client, method, *args):
     try:
         return getattr(client, method)(*args)
-    except Exception:
+    except Exception:  # noqa: BLE001 -- sanitize arbitrary SDK/backend errors here
         # SDK stderr may contain arbitrary backend data. Keep proof material private.
         raise ValueError(
             f"Saucepan {method} failed; check the executable, overspec marker and scoped store, then retry"
@@ -50,7 +51,7 @@ class Repository:
 
 def verify_content(root, manifest):
     if not isinstance(manifest, dict):
-        raise ValueError("Saucepan invalid content manifest")
+        raise ValueError("Saucepan invalid content manifest")  # noqa: TRY004 -- CLI validation contract
     snapshot = FileSystemSnapshot.capture([root])
     actual = {e.relative_path: e for e in snapshot.entries if e.relative_path != "."}
     if actual.keys() != manifest.keys():
@@ -99,6 +100,10 @@ def repositories(client):
                 not isinstance(item[k], str) or not item[k]
                 for k in ("source_id", "snapshot_id", "revision", "content_id")
             )
+            or not re.fullmatch(r"[0-9a-f]{64}", item["source_id"])
+            or not isinstance(item["folder"], (str, type(None)))
+            or not isinstance(item["source"], dict)
+            or item["source"].get("provider") not in ("git", "url", "local")
         ):
             raise ValueError("Saucepan malformed artifact")
         grouped.setdefault(item["source_id"], []).append(item)
@@ -149,5 +154,5 @@ def repositories(client):
             verify_content(root, item["files"])
         except (OSError, ValueError) as exc:
             raise ValueError(f"Saucepan root verification failed: {exc}") from None
-        roots.append(Repository(root, item))
+        roots.append(Repository(root.resolve(strict=True), item))
     return roots, excluded, digest({"view": view, "current": currents})

@@ -86,6 +86,7 @@ class Trait:
     condition: ConditionGroup
     actions: tuple
     source: dict = field(repr=False)
+    provenance: dict | None = None
 
     @property
     def predicates(self):
@@ -93,4 +94,11 @@ class Trait:
         return tuple((leaf.handler, leaf.negated) for leaf in self.condition.leaves())
 
     def record(self):
-        return {"phase": self.phase, "origin": self.origin, "declaration": self.source}
+        record = {
+            "phase": self.phase,
+            "origin": self.origin,
+            "declaration": self.source,
+        }
+        if self.provenance is not None:
+            record["provenance"] = self.provenance
+        return record

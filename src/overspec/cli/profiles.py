@@ -9,6 +9,7 @@ from rich.table import Table
 from rich.text import Text
 
 from overspec.core import storage
+from overspec.core.external.discovery import discover
 from overspec.core.profiles import (
     profile_directories,
     profile_settings,
@@ -51,18 +52,37 @@ def list_profiles(
     project_target = target(ctx, home, project)
     local = profile_directories(project_target.over)
     users = user_profiles(project_target.home)
+    external = discover(project_target.home)
     saved = profile_settings(project_target.home).get("selected")
     effective, _ = selected_name(project_target.home)
     result = []
-    for name, path in sorted({**users, **local}.items()):
+    for name, path in sorted({**external.profiles, **users, **local}.items()):
         item = {
             "name": name,
             "path": str(path),
-            "level": "project" if name in local else "user",
+            "level": "project"
+            if name in local
+            else "user"
+            if name in users
+            else "external",
             "active": name == effective,
             "selected": name == saved,
             "environment": os.environ.get("OVERSPEC_PROFILE"),
         }
+        if name in external.profile_origins:
+            candidates = external.profile_origins[name]
+            item["overridden"] = (
+                candidates if name in users or name in local else candidates[:-1]
+            )
+            if item["level"] == "external":
+                item.update(
+                    {
+                        key: value
+                        for key, value in candidates[-1].items()
+                        if key != "path"
+                    }
+                )
+                item["source_path"] = candidates[-1]["path"]
         metadata = f".state/remotes/{name}/current.json"
         if (
             name not in local

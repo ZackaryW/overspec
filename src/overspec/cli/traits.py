@@ -141,6 +141,16 @@ def resolve(
             console = Console(highlight=False)
             console.print(table)
             for item in decisions:
+                if item.get("reason"):
+                    console.print(Text(item["reason"]))
+                if item.get("provenance"):
+                    provenance = item["provenance"]
+                    console.print(
+                        Text(
+                            f"{item['name']}: revision {provenance['revision']}, "
+                            f"snapshot {provenance['snapshot']}, layout {provenance['layout']}"
+                        )
+                    )
                 if item.get("decision"):
                     console.print(explanation_tree(item))
             return

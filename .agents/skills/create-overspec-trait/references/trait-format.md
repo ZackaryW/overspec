@@ -18,6 +18,19 @@ commit-authoring skill reference; there is no `operations.commit.guidance` targe
 
 ## Small reference trait
 
+For an externally shared repository, standalone traits belong in `over-traits/`
+and profiles in `over-profiles/profile-<name>/`. Each category independently falls
+back to `openspec/.over/` when its top-level directory is absent. An existing empty
+top-level directory suppresses fallback. This repository keeps its authored
+default under `openspec/.over/profile-default`; no relocation is required.
+
+The consumer orders selected-profile traits, external standalone source layers,
+user standalone traits, then project standalone traits. A later same-name trait
+replaces the complete declaration, including phase, conditions, body and details;
+duplicate names within one layer fail. Use plain names without source/profile
+prefixes. Only the selected winning profile is parsed. Source variables and skills
+are not imported with these declarations.
+
 ```toml
 [[trait]]
 name = "zmem-commits"
