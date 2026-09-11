@@ -24,8 +24,23 @@ overspec = "overspec:main"
 saucepan = ["saucepan-sdk @ git+https://github.com/ZackaryW/saucepan@43ba58936c48c3daf00e0e1cd25b870d4869731a#subdirectory=sdk/python"]
 
 [build-system]
-requires = ["uv_build>=0.12.0,<0.13.0"]
-build-backend = "uv_build"
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build]
+dev-mode-dirs = ["src"]
+
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/overspec"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src", "tests", "pyproject.toml", "README.md", "uv.lock", "hatch_build.py"]
 
 [tool.uv.sources]
 zuat = { git = "https://github.com/ZackaryW/zuat" }
