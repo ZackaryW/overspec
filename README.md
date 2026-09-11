@@ -388,7 +388,7 @@ For static init/update/sync/resolve, precedence from highest to lowest is
 `.over/config.toml` vars, then user `~/.overspec/config.toml` vars. Change files
 never affect shared static guidance. Compile-time values remain frozen until update. Changes to relevant
 compile-time definitions, details, activation, or configured inputs require update;
-ordinary/runtime-only edits need only sync.
+ordinary edits need sync; runtime body and condition edits apply on the next invocation.
 
 ## Runtime commands and saved details
 
@@ -409,19 +409,20 @@ k = "do-not-archive"
 includes = "$activeChanges"
 ```
 
-Sync emits one command per resolution and attachment, with each trait ID once:
+Sync emits one command per attachment, with each trait ID once:
 
 ```sh
-overspec trait resolve --resolution <id> --attach operations.archive.guidance --trait archive-check --trait another-check --context-file context.json
+overspec trait resolve --attach operations.archive.guidance --trait archive-check --trait another-check --context-file context.json
 ```
 
 Run it from the owning project root, or supply `--project`. A context file is a JSON
 object, for example `{"do-not-archive": ["example"], "activeChanges": ["example"]}`.
-For newly synced version-2 resolutions, precedence is explicit context JSON,
+Runtime precedence is explicit context JSON,
 selected-change current, selected-change persistent, project current, project
-persistent, then retained configured defaults. Those defaults contain user/project
-config and sync's explicit JSON, excluding variable-file layers. File layers are
-read fresh for every invocation; removing a temporary file removes its override.
+persistent, then current project and user configured defaults. Source definitions,
+profile selection, configured defaults, and file layers are read fresh for every
+invocation; removing a temporary file removes its override. Transient values passed
+to an earlier sync are not runtime defaults.
 Both assertions and rendering see the final mapping. Exact matching remains typed;
 includes supports list membership or `$name` list overlap, while equality does not
 dereference variables. No regex, glob, or expression matching is added.
@@ -429,10 +430,11 @@ dereference variables. No regex, glob, or expression matching is added.
 Append `--change-root <path>` from OpenSpec status to the emitted runtime command
 for a selected change. The shared config contains no fixed change path or values.
 Without selection only project layers apply. An invalid, moved, or redirected root
-fails rather than falling back to another change. Only the currently synchronized
-resolution is available; superseded IDs fail. Invocations do not share context. Returned
+fails rather than falling back to another change. Runtime resolve accepts no
+resolution ID. Invocations do not share context. Returned
 matched, unsuppressed bodies have individual name markers. Runtime resolution uses
-the saved group and its history, runs offline, and writes no state. It does not
+the current group and retained earlier-phase history, performs no remote retrieval,
+and writes no state. It does not reevaluate compile-time or normal traits, or
 advance, block, or archive OpenSpec changes.
 
 ```sh
@@ -444,8 +446,9 @@ overspec trait show tdd --details --resolution <current-id>
 `resolve --explain` shows the group tree, condition paths, operators, evaluated
 reasons, and skipped branches. Add `--json` for structured traces. Migrating a
 compile-time declaration to grouped tables requires `overspec update` before
-sync; ordinary/runtime migrations need only sync. Previously synchronized runtime
-commands retain their original conditions until sync replaces the current snapshot.
+sync; ordinary migrations need sync. Runtime conditions and bodies are loaded
+when the stage invokes the command. Sync is needed when emitted names or attachments
+change, and once to replace commands containing the removed `--resolution` option.
 
 Default detail lookup uses the last successful sync receipt and verifies owned
 config values and markers. Editing the active profile after sync does not change
@@ -493,8 +496,8 @@ Saucepan; it is no longer needed solely to obtain the packaged default.
 Run top-level `overspec update`, review `overspec sync --dry-run`, then sync when
 adopting a changed selected name or effective compile-time guidance. Package
 version changes, installation relocation, and fully overridden lower changes do
-not alone invalidate compilation. Saved runtime guidance remains usable until
-successful synchronization replaces its resolution. Missing/corrupt bundled
+not alone invalidate compilation. Runtime guidance uses the currently discovered
+package and acquired sources on each invocation. Missing/corrupt bundled
 content is an error, not a trigger to download a replacement.
 
 ## Development

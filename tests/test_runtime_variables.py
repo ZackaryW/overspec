@@ -20,13 +20,13 @@ def runtime(project, **extra):
     return project.sync()["resolution"]
 
 
-def body(project, identity, **kwargs):
-    return resolve_runtime(project.root, identity, "context", ["r"], **kwargs)[0][
+def body(project, **kwargs):
+    return resolve_runtime(project, "context", ["r"], **kwargs)[0][
         "body"
     ]
 
 
-def test_runtime_precedence_deletion_and_retained_defaults(project, tmp_path):
+def test_runtime_precedence_deletion_and_live_defaults(project, tmp_path):
     project.home.mkdir()
     (project.home / "config.toml").write_text('[vars]\nx="user"')
     config = source(project, '[vars]\nx="config"', "config.toml")
@@ -39,7 +39,7 @@ def test_runtime_precedence_deletion_and_retained_defaults(project, tmp_path):
     cp.write_text('[vars]\nx="change-persistent"')
     cc.write_text('[vars]\nx="change-current"')
     assert (
-        body(project, identity, change=selected, context={"x": "explicit"})
+        body(project, change=selected, context={"x": "explicit"})
         == "explicit"
     )
     for path, expected in [
@@ -48,15 +48,15 @@ def test_runtime_precedence_deletion_and_retained_defaults(project, tmp_path):
         (current, "project-current"),
         (persistent, "project-persistent"),
     ]:
-        assert body(project, identity, change=selected) == expected
+        assert body(project, change=selected) == expected
         path.unlink()
     config.write_text('[vars]\nx="changed-config"')
-    assert body(project, identity, change=selected) == "config"
+    assert body(project, change=selected) == "changed-config"
     new = project.sync(values={"x": "sync-explicit"})["resolution"]
-    assert body(project, new) == "sync-explicit"
+    assert body(project) == "changed-config"
     source(project, '[vars]\nx="live"', ".current.toml")
-    assert body(project, new) == "live"
-    assert body(project, new, context={"x": None}) == "null"
+    assert body(project) == "live"
+    assert body(project, context={"x": None}) == "null"
 
 
 def test_v2_format_namespace_and_root_validation(project, tmp_path):
@@ -102,15 +102,15 @@ def test_matching_and_rendering_share_live_mapping(project, tmp_path):
     )
     selected = change(tmp_path / "one")
     selected.joinpath(".vars.toml").write_text('[vars]\nx="change"\nflag=true')
-    assert body(project, identity, change=selected) == "change"
+    assert body(project, change=selected) == "change"
     for context in [{"flag": 1}, {"flag": False}, {"items": ["c"]}, {"wanted": ["z"]}]:
         assert (
             resolve_runtime(
-                project.root, identity, "context", ["r"], context, change=selected
+                project, "context", ["r"], context, change=selected
             )
             == []
         )
-    assert resolve_runtime(project.root, identity, "context", ["r"]) == []
+    assert resolve_runtime(project, "context", ["r"]) == []
 
 
 def test_scope_isolation_invalid_moved_and_metadata(project, tmp_path):
@@ -118,18 +118,18 @@ def test_scope_isolation_invalid_moved_and_metadata(project, tmp_path):
     one, two = change(tmp_path / "one"), change(tmp_path / "two")
     one.joinpath(".vars.toml").write_text('[vars]\nx="one"')
     two.joinpath(".vars.toml").write_text('[vars]\nx="two"')
-    assert body(project, identity, change=one) == "one"
-    assert body(project, identity, change=two) == "two"
-    assert body(project, identity, context={"x": "project-only"}) == "project-only"
+    assert body(project, change=one) == "one"
+    assert body(project, change=two) == "two"
+    assert body(project, context={"x": "project-only"}) == "project-only"
     moved = tmp_path / "moved"
     one.rename(moved)
     for invalid in [one, tmp_path, two / ".vars.toml"]:
         with pytest.raises(ValueError):
-            body(project, identity, change=invalid)
+            body(project, change=invalid)
     two.joinpath(".openspec.yaml").write_text("[]")
     with pytest.raises(ValueError, match="metadata"):
-        body(project, identity, change=two)
-    assert body(project, identity, change=moved) == "one"
+        body(project, change=two)
+    assert body(project, change=moved) == "one"
 
 
 def test_legacy_resolution_data_requires_regeneration(project):
@@ -142,7 +142,7 @@ def test_legacy_resolution_data_requires_regeneration(project):
     project.state.write_bytes(storage.encoded(state))
     before = project.state.read_bytes()
     with pytest.raises(ValueError, match="Corrupt"):
-        body(project, identity, context={"x": "explicit"})
+        body(project, context={"x": "explicit"})
     assert project.state.read_bytes() == before
 
 
@@ -150,7 +150,7 @@ def test_runtime_cli_projection_and_details_are_readonly(project, tmp_path):
     identity = runtime(project)
     selected = change(tmp_path / "one")
     selected.joinpath(".vars.toml").write_text('[vars]\nx="[bold]literal[/bold]"')
-    guidance = contributions(project.prepare(), identity)[0]["body"]
+    guidance = contributions(project.prepare())[0]["body"]
     assert guidance.count("overspec trait resolve") == 1
     assert (
         "--change-root" in guidance and "OpenSpec" in guidance and "store" in guidance
@@ -159,8 +159,6 @@ def test_runtime_cli_projection_and_details_are_readonly(project, tmp_path):
     command = [
         "trait",
         "resolve",
-        "--resolution",
-        identity,
         "--attach",
         "context",
         "--trait",
@@ -220,23 +218,24 @@ def test_redirected_scope_and_variable_targets_are_rejected(project, tmp_path):
         alias.symlink_to(selected, target_is_directory=True)
     identity = runtime(project)
     with pytest.raises(ValueError):
-        body(project, identity, change=alias)
+        body(project, change=alias)
     with pytest.raises(ValueError):
         setup_variables(project.root, [alias])
     assert not (project.over / ".current.toml").exists()
     target = project.over / ".current.toml"
     target.mkdir()
     with pytest.raises(ValueError):
-        body(project, identity)
+        body(project)
 
 
-def test_live_resolution_and_details_ignore_profile_changes(project):
+def test_runtime_checks_live_sources_while_details_remain_saved(project):
     from overspec.core.profiles import toggle_profiles
 
     identity = runtime(project)
     toggle_profiles(project.home)
-    # A now-invalid profile source cannot replace retained definitions or details.
+    # Runtime validates current profiles; saved detail inspection stays available.
     source(project, "invalid", "profile-default/traits.toml")
     source(project, '[vars]\nx="live"', ".current.toml")
-    assert body(project, identity) == "live"
+    with pytest.raises(ValueError):
+        body(project)
     assert show_details(project.root, "r", identity)["details"] == "Literal ${details}"

@@ -4,13 +4,12 @@ import shlex
 
 from . import storage
 from .change_scope import change_root
-from .trait_system.evaluator import evaluate, validate_references
+from .trait_system.evaluator import evaluate
 from .trait_system.rendering import variables
-from .trait_system.sources import parse_trait
 from .variables import file_layers
 
 
-def contributions(bundle, identity):
+def contributions(bundle):
     result = []
     groups = {}
     state = bundle["static"]
@@ -29,8 +28,6 @@ def contributions(bundle, identity):
                 "overspec",
                 "trait",
                 "resolve",
-                "--resolution",
-                identity,
                 "--attach",
                 attach,
             ]
@@ -51,15 +48,13 @@ def contributions(bundle, identity):
     return result
 
 
-def resolve_runtime(root, identity, attach, names, context=None, *, change=None):
+def resolve_runtime(project, attach, names, context=None, *, change=None):
+    """Evaluate current runtime declarations without advancing earlier lifetimes."""
     if not isinstance(context if context is not None else {}, dict):
         raise ValueError("Runtime context must be a JSON object")
-    bundle = storage.load_bundle(root, "resolutions", identity)
+    root = project.root
     selected = change_root(change) if change is not None else None
-    traits = [
-        parse_trait(t["declaration"], t["phase"], t["origin"]) for t in bundle["traits"]
-    ]
-    validate_references(traits)
+    traits, _, _, base = project.inventory()
     group = [t for t in traits if t.phase == "runtime-trait" and t.attach == attach]
     available = {t.name for t in group}
     if not names or len(set(names)) != len(names) or not set(names) <= available:
@@ -67,15 +62,26 @@ def resolve_runtime(root, identity, attach, names, context=None, *, change=None)
             "Unknown or duplicate runtime trait IDs or mismatched attachment"
         )
     values = variables(
-        bundle["runtime_defaults"],
-        *file_layers(root, "openspec/.over/"),
+        base,
         *(file_layers(selected) if selected is not None else []),
         context or {},
     )
-    runtime = values
-    state = evaluate(
-        group, root, prior=bundle["static"], values=values, runtime=runtime
-    )
+    saved = storage.read_state(root, missing_ok=True)
+    earlier = saved["resolution"] or saved["compilation"]
+    prior = None
+    if earlier is not None:
+        retained = earlier["data"]["static"]
+        static_names = {t.name for t in traits if t.phase != "runtime-trait"}
+        current_names = {t.name for t in traits}
+        prior = {
+            "matched": [n for n in retained["matched"] if n in static_names],
+            "suppressed": [n for n in retained["suppressed"] if n in current_names],
+            "bodies": {n: b for n, b in retained["bodies"].items() if n in static_names},
+            "decisions": {
+                n: d for n, d in retained["decisions"].items() if n in static_names
+            },
+        }
+    state = evaluate(group, root, prior=prior, values=values, runtime=values)
     return [
         {"name": t.name, "attach": t.attach, "body": state["bodies"][t.name]}
         for t in group

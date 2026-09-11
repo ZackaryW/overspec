@@ -24,9 +24,8 @@ def test_toggle_same_default_and_named_profile_lifetimes(project, monkeypatch):
     toggle_profiles(project.home)
     monkeypatch.setenv("OVERSPEC_PROFILE", "missing")
     before = {project.state: project.state.read_bytes()}
-    assert (
-        resolve_runtime(project.root, saved, "context", ["team"])[0]["name"] == "team"
-    )
+    with pytest.raises(ValueError, match="Unknown"):
+        resolve_runtime(project, "context", ["team"])
     assert show_details(project.root, "team")["details"] == "Saved team"
     assert before == {p: p.read_bytes() for p in before}
     with pytest.raises(ValueError, match="update"):

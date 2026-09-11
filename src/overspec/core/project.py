@@ -219,7 +219,7 @@ class Project:
         original = path.read_bytes().decode("utf-8")
         bundle = self.prepare(values=values, inputs=inputs)
         identity = storage.digest(bundle)
-        candidate, changed = project_yaml(original, contributions(bundle, identity))
+        candidate, changed = project_yaml(original, contributions(bundle))
         result = {
             "path": str(path),
             "resolution": identity,

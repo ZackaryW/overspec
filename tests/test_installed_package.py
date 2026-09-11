@@ -154,7 +154,7 @@ p = Project(Path.cwd(), Path.cwd() / 'home')
 p.initialize()
 result = p.sync()
 from overspec.core.resolution import resolve_runtime, show_details
-rows = resolve_runtime(p.root, result['resolution'], 'operations.archive.guidance', ['do-not-archive-openspec-change'], {'do-not-archive': True})
+rows = resolve_runtime(p, 'operations.archive.guidance', ['do-not-archive-openspec-change'], {'do-not-archive': True})
 assert rows and rows[0]['name'] == 'do-not-archive-openspec-change'
 assert show_details(p.root, 'tdd')['details']
 assert snapshot() == before

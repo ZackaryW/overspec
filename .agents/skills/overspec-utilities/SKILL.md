@@ -7,7 +7,7 @@ description: Plan reusable utility responsibilities and mature accepted utility 
 
 Accept the owning native instruction JSON, the caller (`ff-change`, `propose`,
 or explicit apply), its resolved project and changeRoot, and mode (`plan` or
-`mature`). Read current context and rules first, including applicable saved
+`mature`). Read current context and rules first, including applicable
 Overspec runtime commands with the exact changeRoot. Respect source-of-truth
 and allowedEditRoots from native status. Do not infer a store from cwd.
 

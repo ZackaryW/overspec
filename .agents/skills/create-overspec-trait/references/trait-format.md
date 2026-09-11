@@ -9,7 +9,7 @@ contain multiple declarations, but a separate file helps keep a responsibility s
 | --- | --- |
 | `[[compiletime-trait]]` | Init/update; retained between updates |
 | `[[trait]]` | Sync or read-only static resolution |
-| `[[runtime-trait]]` | Saved runtime command with invocation context |
+| `[[runtime-trait]]` | Stage invocation, using current definitions and variables |
 
 Attachments are `context`, `rules.<artifact-id>`, `operations.apply.guidance`, and
 `operations.archive.guidance`. The entire suffix after `rules.` is one literal
@@ -118,8 +118,8 @@ Profile contributors compose trait-by-trait from package through acquired reposi
 `overspec trait show NAME --details` reads details retained by the last successful
 sync; `--resolution ID` must match the current snapshot in `.over/.state.json`.
 Superseded IDs fail; no historical generations are kept. Editing live source does not
-rewrite previously saved details. Runtime guidance likewise uses its saved bundle,
-even when current profile mode or selection changes.
+rewrite previously saved details. Runtime guidance loads current definitions and
+variables from the current source/profile selection without a resolution ID.
 
 ## Scoped variable inputs
 
@@ -146,15 +146,15 @@ project config vars, and user config vars. Change variables do not enter static
 sync. Changed inputs used by compiled bodies require update; ordinary bodies are
 fresh at sync. Runtime assertions remain runtime-only.
 
-Version-2 runtime precedence is `--context-file` JSON over selected-change current,
-selected-change persistent, project current, project persistent, and retained
-configured defaults. Files are reread for each invocation and feed both conditions
+Runtime precedence is `--context-file` JSON over selected-change current,
+selected-change persistent, project current, project persistent, project config,
+and user config vars. Files are reread for each invocation and feed both conditions
 and body rendering. Removing a layer does not restore its old captured values.
 Match is exact and typed; `$name` dereferencing is supported only for an includes
 list operand, not equality. No regex/glob/expression predicates are available.
 
 Get the exact change root using `openspec status --change <name> --json`, keeping
-the selected `--store`. Append `--change-root <path>` to the saved runtime command.
+the selected `--store`. Append `--change-root <path>` to the runtime command.
 Omitting it means project-only variables, not automatic active-change selection.
 External roots are allowed; missing/moved/redirected ones fail. Legacy multi-file
 state requires explicit update then sync; old commands are not historical lookups.

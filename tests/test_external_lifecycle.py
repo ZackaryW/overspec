@@ -81,7 +81,7 @@ def test_external_named_profile_and_cli_catalog(project, external, monkeypatch):
     assert contributor["path"] == "over-profiles/profile-team"
 
 
-def test_runtime_refresh_stable_compilation_and_saved_offline(
+def test_runtime_refresh_is_live_with_stable_compilation_and_saved_details(
     project, external, monkeypatch
 ):
     client, root = external
@@ -91,6 +91,7 @@ def test_runtime_refresh_stable_compilation_and_saved_offline(
     write(root, "over-profiles/profile-default/trait.toml", text)
     write(root, "openspec/.over/.vars.toml", 'value="foreign"')
     client.add(root)
+    write(project.over, ".vars.toml", '[vars]\nvalue="consumer"')
     project.initialize()
     saved = project.sync(values={"value": "consumer"})
     compilation = storage.read_state(project.root)["compilation"]["id"]
@@ -102,33 +103,28 @@ def test_runtime_refresh_stable_compilation_and_saved_offline(
     )
     client.add(newer, snapshot="2" * 64)
     assert (
-        resolve_runtime(project.root, saved["resolution"], "context", ["runtime"])[0][
-            "body"
-        ]
-        == "old consumer"
-    )
-    current = project.sync(values={"value": "consumer"})
-    assert storage.read_state(project.root)["compilation"]["id"] == compilation
-    assert (
-        resolve_runtime(project.root, current["resolution"], "context", ["runtime"])[0][
+        resolve_runtime(project, "context", ["runtime"])[0][
             "body"
         ]
         == "new consumer"
     )
-    with pytest.raises(ValueError):
-        resolve_runtime(project.root, saved["resolution"], "context", ["runtime"])
+    current = project.sync(values={"value": "consumer"})
+    assert storage.read_state(project.root)["compilation"]["id"] == compilation
+    assert (
+        resolve_runtime(project, "context", ["runtime"])[0][
+            "body"
+        ]
+        == "new consumer"
+    )
+    write(project.over, ".current.toml", '[vars]\nvalue="live"')
+    assert resolve_runtime(project, "context", ["runtime"])[0]["body"] == "new live"
     monkeypatch.setattr(
         "overspec.core.external.adapter.create_client",
         lambda _: (_ for _ in ()).throw(AssertionError("live lookup")),
     )
     assert show_details(project.root, "runtime")["details"] == "saved details"
-    write(project.over, ".current.toml", '[vars]\nvalue="live"')
-    assert (
-        resolve_runtime(project.root, current["resolution"], "context", ["runtime"])[0][
-            "body"
-        ]
-        == "new live"
-    )
+    with pytest.raises(AssertionError, match="live lookup"):
+        resolve_runtime(project, "context", ["runtime"])
 
 
 def test_effective_compiletime_change_requires_update(project, external):

@@ -9,7 +9,7 @@ def group(*assertions, any_=False):
     return {"or": any_, "assertion": list(assertions)}
 
 
-def test_groups_keep_phase_lifetimes_and_retained_runtime_sources(project, monkeypatch):
+def test_groups_keep_phase_lifetimes_and_live_runtime_sources(project, monkeypatch):
     monkeypatch.setattr("shutil.which", lambda _: None)
     compiled = source(
         project,
@@ -63,10 +63,10 @@ def test_groups_keep_phase_lifetimes_and_retained_runtime_sources(project, monke
     assert [
         item["name"]
         for item in resolve_runtime(
-            project.root, first, "context", ["runtime"], {"override": True}
+            project, "context", ["runtime"], {"override": True}
         )
     ] == ["runtime"]
-    assert resolve_runtime(project.root, first, "context", ["runtime"], {}) == []
+    assert resolve_runtime(project, "context", ["runtime"], {}) == []
 
     pointer = storage.read_state(project.root)["compilation"]
     ordinary.write_text(
@@ -77,7 +77,7 @@ def test_groups_keep_phase_lifetimes_and_retained_runtime_sources(project, monke
     )
     second = project.sync()["resolution"]
     assert (
-        resolve_runtime(project.root, second, "context", ["runtime"], {"flag": True})
+        resolve_runtime(project, "context", ["runtime"], {"flag": True})
         == []
     )
     assert storage.read_state(project.root)["compilation"] == pointer
@@ -95,16 +95,14 @@ def test_groups_keep_phase_lifetimes_and_retained_runtime_sources(project, monke
         for p in project.root.rglob("*")
         if p.is_file()
     }
-    with pytest.raises(ValueError, match="Stale"):
-        resolve_runtime(project.root, first, "context", ["runtime"], {"flag": True})
     assert (
-        resolve_runtime(project.root, second, "context", ["runtime"], {"flag": True})
-        == []
+        resolve_runtime(project, "context", ["runtime"], {"flag": True})[0]["body"]
+        == "Changed"
     )
     assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in before}
 
 
-def test_flat_conditions_work_until_grouped_sync_replaces_current_id(project):
+def test_flat_conditions_change_to_groups_without_sync(project):
     legacy = [
         {"type": "runtime-context-match", "kv": "flag=true"},
         {"type": "~runtime-context-match", "kv": "blocked=true"},
@@ -118,17 +116,12 @@ def test_flat_conditions_work_until_grouped_sync_replaces_current_id(project):
     project.initialize()
     old = project.sync()["resolution"]
     assert resolve_runtime(
-        project.root, old, "context", ["runtime"], {"flag": True, "blocked": True}
+        project, "context", ["runtime"], {"flag": True, "blocked": True}
     )
     path.write_text(
         declaration("runtime", "runtime-trait", **{"assert": {"1": group(*legacy)}})
     )
-    new = project.sync()["resolution"]
-    assert old != new
-    with pytest.raises(ValueError, match="Stale"):
-        resolve_runtime(
-            project.root, old, "context", ["runtime"], {"flag": True, "blocked": True}
-        )
     assert not resolve_runtime(
-        project.root, new, "context", ["runtime"], {"flag": True, "blocked": True}
+        project, "context", ["runtime"], {"flag": True, "blocked": True}
     )
+    assert storage.read_state(project.root)["resolution"]["id"] == old

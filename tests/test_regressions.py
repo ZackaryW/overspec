@@ -60,8 +60,9 @@ def test_runtime_bundle_rejects_copy_to_another_root(project, tmp_path):
     identity = project.sync()["resolution"]
     other = tmp_path / "other"
     shutil.copytree(project.root, other)
+    from overspec.core.project import Project
     with pytest.raises(ValueError, match="root mismatch"):
-        resolve_runtime(other, identity, "context", ["a"], {})
+        resolve_runtime(Project(other, project.home), "context", ["a"], {})
     with pytest.raises(ValueError):
         show_details(other, "a")
 
@@ -72,7 +73,7 @@ def test_runtime_details_changes_refresh_reference_but_no_details_leak(project):
     first = project.sync()
     path.write_text(declaration("a", "runtime-trait", details="second"))
     second = project.sync()
-    assert second["changed"] and second["resolution"] != first["resolution"]
+    assert not second["changed"] and second["resolution"] != first["resolution"]
     assert "second" not in second["candidate"]
 
 
@@ -183,7 +184,6 @@ def test_hardlinked_sources_load_once(tmp_path):
 
 def test_suppressed_ordinary_does_not_mutate_compilation(project):
     from overspec.core.resolution import contributions, explain
-    from overspec.core.storage import digest
 
     source(project, declaration("a", "compiletime-trait"))
     project.initialize()
@@ -194,20 +194,19 @@ def test_suppressed_ordinary_does_not_mutate_compilation(project):
         "trait-hide.toml",
     )
     bundle = project.prepare()
-    assert [x["name"] for x in contributions(bundle, digest(bundle))] == ["b"]
+    assert [x["name"] for x in contributions(bundle)] == ["b"]
     assert {x["name"]: x["status"] for x in explain(bundle)} == {
         "a": "suppressed",
         "b": "matched",
     }
     override.unlink()
     bundle = project.prepare()
-    assert [x["name"] for x in contributions(bundle, digest(bundle))] == ["a"]
+    assert [x["name"] for x in contributions(bundle)] == ["a"]
     assert storage.read_state(project.root)["compilation"] == pointer
 
 
 def test_two_runtime_destinations_produce_separate_commands(project):
     from overspec.core.resolution import contributions
-    from overspec.core.storage import digest
 
     source(
         project,
@@ -216,7 +215,7 @@ def test_two_runtime_destinations_produce_separate_commands(project):
     )
     project.initialize()
     bundle = project.prepare()
-    groups = contributions(bundle, digest(bundle))
+    groups = contributions(bundle)
     assert len(groups) == 2
     assert "--trait a" in groups[0]["body"] and "--trait b" not in groups[0]["body"]
     assert "--trait b" in groups[1]["body"] and "--trait a " not in groups[1]["body"]

@@ -32,8 +32,7 @@ def test_single_file_bounded_growth_and_noop(project):
         assert data["sync"]["resolution"] == identity
     assert not (project.over / ".state").exists()
     assert show_details(project.root, "r")["details"] == "details-7"
-    with pytest.raises(ValueError, match="[Ss]tale|superseded"):
-        resolve_runtime(project.root, old, "context", ["r"])
+    assert resolve_runtime(project, "context", ["r"])[0]["body"] == "body-7"
     with pytest.raises(ValueError, match="[Ss]tale|superseded"):
         show_details(project.root, "r", old)
     before = state.read_bytes(), state.stat().st_mtime_ns
@@ -95,12 +94,12 @@ def test_current_state_validation(project, damage):
 def test_state_failure_after_config_preserves_old_state_and_retries(
     project, monkeypatch
 ):
-    path = source(project, declaration("r", "runtime-trait"))
+    path = source(project, declaration("r", "runtime-trait") + declaration("n"))
     project.initialize()
     project.sync()
     state = project.over / ".state.json"
     before = state.read_bytes()
-    path.write_text(declaration("r", "runtime-trait", body="new"))
+    path.write_text(declaration("r", "runtime-trait") + declaration("n", body="new"))
     replace = storage.os.replace
 
     def fail(src, dst):

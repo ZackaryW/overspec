@@ -62,7 +62,6 @@ def resolve(
             rich_help_panel="Output",
         ),
     ] = False,
-    resolution: ResolutionOption = None,
     attach: Annotated[
         str | None,
         typer.Option(
@@ -95,24 +94,21 @@ def resolve(
         ),
     ] = None,
 ):
-    """Resolve static guidance or execute a saved runtime trait group."""
+    """Resolve static guidance or evaluate a current runtime trait group."""
     project_target = target(ctx, home, project)
-    if resolution:
+    if attach or traits or context_file or change_root:
         if explain_output or vars_file or not attach or not traits:
             raise typer.BadParameter(
                 "Runtime resolve requires --attach and --trait; use --context-file for inputs."
             )
         result = resolve_runtime(
-            project_target.root,
-            resolution,
+            project_target,
             attach,
             traits,
             json_file(context_file),
             change=change_root,
         )
     else:
-        if attach or traits or context_file or change_root:
-            raise typer.BadParameter("Runtime arguments require --resolution.")
         if explain_output and not storage.has_compilation(project_target.root):
             json_file(vars_file)  # Validate supplied input without evaluating traits.
             plan = project_target.source_inputs()
@@ -158,7 +154,7 @@ def resolve(
             show_explanations(ctx, json_output, decisions)
             return
         bundle = project_target.prepare(values=json_file(vars_file))
-        result = contributions(bundle, storage.digest(bundle))
+        result = contributions(bundle)
         project_yaml(
             config_target(project_target.root).read_text(encoding="utf-8"), result
         )

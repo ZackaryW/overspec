@@ -58,12 +58,13 @@ overspec sync --dry-run
 ```
 
 Missing compilation requires `init`; changed compile-time definitions require
-`update`. Ordinary/runtime source edits need only sync. Respect the user's scope
+`update`. Ordinary source edits need sync; runtime bodies and conditions are read
+on invocation. Sync updates emitted runtime names and attachments. Respect the user's scope
 when writing compilation or synchronized configuration. When sync is requested,
 inspect the preview, sync, and verify the emitted body/reference and source marker;
 sync replaces owned guidance fields. Keep optional details out of generated text.
 
-For runtime traits, execute the saved resolution command with representative
+For runtime traits, execute the snapshot-free runtime command with representative
 context to check its output. Sync emits one command per resolution/attachment,
 not unconditional runtime bodies. Report the source file, lifetime, attachment,
 applicability, and validation performed.

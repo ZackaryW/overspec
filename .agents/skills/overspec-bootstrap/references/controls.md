@@ -56,20 +56,21 @@ Change variables never affect shared static sync. `compiletime-trait` freezes at
 init/update; changing a used effective input requires update. Unrelated variables
 do not. Ordinary `trait` reads project variables on each sync/preview.
 
-Highest to lowest for version-2 saved runtime commands:
+Highest to lowest for runtime commands:
 
 1. Explicit `--context-file` JSON.
 2. Selected change `.current.toml`.
 3. Selected change `.vars.toml`.
 4. Project `.current.toml`.
 5. Project `.vars.toml`.
-6. Retained configured defaults: user/project config plus sync's explicit JSON.
+6. Current project config vars, then current user config vars.
 
 Runtime rereads file layers on each invocation. Removing a file removes that
 layer; temporary values are not fallback defaults. Assertions and body rendering
 use the same final mapping. No `--change-root` means project scope only, with no
 automatic change selection. Missing/moved/redirected explicit roots fail.
-Retained defaults and definitions do not follow live profile/config edits.
+Runtime definitions, profile selection, and configured defaults are read live.
+Runtime commands have no resolution ID and never reuse sync's transient JSON.
 
 Only the current synchronized resolution is retained in `.over/.state.json`.
 An explicit resolution ID guards that snapshot; superseded IDs fail. Legacy
@@ -136,7 +137,8 @@ commands/details do not load the package or call Saucepan.
 | All active changes in that store | `overspec init --setup-only --project <root> --store <id>` |
 | Several exact changes | Repeat `--change-root` on init; do not also supply `--store` |
 | Relevant compile-time source/input changed | `overspec update`, then preview/sync |
-| Ordinary/runtime source changed | Preview/sync; runtime definitions are retained by resolution ID |
+| Ordinary source changed | Preview/sync |
+| Runtime body/condition changed | Next runtime invocation loads it; sync only to update emitted names/attachments |
 | Named profile management requested | `overspec profile activate` toggles mode; inspect profile help before selecting |
 
 Setup-only does not compile, sync, pull profiles, or toggle activation. Normal

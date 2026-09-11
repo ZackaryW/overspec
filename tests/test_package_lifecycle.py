@@ -100,8 +100,7 @@ def test_effective_changes_and_package_relocation(package_project, tmp_path):
     project.initialize(update=True)
     project.sync()
     assert storage.read_state(project.root)["compilation"]["id"] != compilation
-    with pytest.raises(ValueError):
-        resolve_runtime(project.root, initial["resolution"], "context", ["runtime"])
+    assert resolve_runtime(project, "context", ["runtime"])[0]["body"] == "runtime"
 
 
 def test_overridden_base_changes_do_not_invalidate_compilation(package_project):
@@ -145,7 +144,7 @@ def test_package_changes_during_sync_reject_publication(
     assert project.state.read_bytes() == state
 
 
-def test_saved_runtime_details_and_noop_need_no_live_package(
+def test_runtime_needs_live_package_but_saved_details_do_not(
     package_project, monkeypatch
 ):
     project, _, _ = package_project
@@ -160,12 +159,8 @@ def test_saved_runtime_details_and_noop_need_no_live_package(
         raise AssertionError("live package loaded")
 
     monkeypatch.setattr(bundled, "default_profile", unavailable)
-    assert (
-        resolve_runtime(project.root, result["resolution"], "context", ["runtime"])[0][
-            "body"
-        ]
-        == "runtime"
-    )
+    with pytest.raises(AssertionError, match="live package loaded"):
+        resolve_runtime(project, "context", ["runtime"])
     assert show_details(project.root, "runtime")["details"] == "saved"
 
 
