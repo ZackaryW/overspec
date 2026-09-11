@@ -8,7 +8,7 @@ Resolve reusable profiles and local traits into attributable OpenSpec guidance a
 
 ### Requirement: Profile and local trait discovery
 
-Overspec SHALL recognize immediate `profile-<nonempty-name>` directories under the project's `openspec/.over/` and configured user home as profile sources. With profile mode off, it SHALL resolve only default sources; with mode on, named-profile discovery and selection SHALL be available. Trait discovery SHALL include regular TOML files whose basenames begin with `trait`, at any depth under the effective profile or the project's `.over/`. The local scan SHALL exclude every profile subtree, including inactive profiles, and internal generated-state directories. Discovery SHALL not require a source-list manifest, follow redirected directories outside its roots, or load one file twice. Paths SHALL be ordered deterministically by normalized relative path, then declarations by file order within each trait type.
+Overspec SHALL recognize immediate `profile-<nonempty-name>` directories under the project's `openspec/.over/` and configured user home as profile sources, and external profile candidates defined by saucepan-source-discovery. With profile mode off, it SHALL resolve only default profile declarations; with mode on, named-profile discovery and selection SHALL be available. External standalone traits SHALL participate in either mode. Trait discovery SHALL include regular TOML files whose basenames begin with `trait`, at any depth under the effective profile, the project's `.over/`, or the user home's standalone layer. Standalone scans SHALL exclude every profile subtree, including inactive profiles, and internal generated-state directories. Discovery SHALL not require a repository-specific source-list manifest, follow redirected directories outside its roots, or load one physical file twice within a layer. Paths SHALL be ordered deterministically by normalized relative path, then declarations by file order within each trait type. External repository discovery SHALL use its independent top-level-first category selection and source priority.
 
 #### Scenario: Nested local sources
 - **WHEN** the project contains `.over/trait.toml`, `.over/team/python/traits.toml`, and `.over/team/trait-testing.toml`
@@ -26,11 +26,13 @@ Overspec SHALL recognize immediate `profile-<nonempty-name>` directories under t
 
 The default user home SHALL be `~/.overspec`. An explicit `--home` SHALL override
 `OVERSPEC_HOME`, which SHALL override that default. User profiles, activation, and
-remote state SHALL use the chosen user home. Overspec SHALL NOT implicitly read,
+legacy remote state SHALL use the chosen user home. The Saucepan connection and
+source priority SHALL also belong to that home; acquired content SHALL remain
+in Saucepan-managed storage accessed through its public API. Overspec SHALL NOT implicitly read,
 write, or migrate `~/.over`; project sources and resolution state SHALL remain
 under `openspec/.over/`.
 
-Profile mode SHALL be off when no enabled state has been persisted in the chosen user home. In off mode, composition SHALL use default automatically, with project `profile-default` overriding the user default as a complete source and loose local traits applying afterward. It SHALL ignore named-profile environment and saved-user selections. Unrelated named profiles SHALL neither contribute nor force a selection error, and their source contents SHALL not be loaded or validated. With no default source, local-only operation SHALL remain available. Profile mode SHALL control access to named selection and management, not whether ordinary composition works.
+Profile mode SHALL be off when no enabled state has been persisted in the chosen user home. In off mode, composition SHALL use default automatically, with project `profile-default` overriding the user default, which overrides external default candidates, each as a complete profile source. External, user, and project standalone traits SHALL then apply in their defined layer order. It SHALL ignore named-profile environment and saved-user selections. Unrelated named profiles SHALL neither contribute nor force a selection error, and their source contents SHALL not be loaded or validated. With no default source, standalone-only operation SHALL remain available, including local-only operation when there are no external sources. Profile mode SHALL control access to named selection and management, not whether ordinary composition works.
 
 `overspec profile activate` SHALL accept no profile name and SHALL toggle the persisted user-level mode, reporting its resulting state. It SHALL preserve any saved selection and unrelated user settings. Toggling SHALL not implicitly compile, synchronize configuration, fetch profiles, or delete sources or saved resolutions. Turning mode off SHALL restore default resolution even while a named environment selection remains set; turning it back on SHALL make that selection applicable again.
 
@@ -44,7 +46,7 @@ Profile mode SHALL be off when no enabled state has been persisted in the chosen
 
 #### Scenario: Dormant selection does not change default behavior
 - **WHEN** mode is off, a saved or environment selection names strict, and a non-default profile contains malformed trait data
-- **THEN** composition uses only default plus local traits and does not validate or activate that unrelated profile
+- **THEN** composition uses only default plus applicable standalone traits and does not validate or activate that unrelated profile
 
 #### Scenario: No default but other profiles exist
 - **WHEN** mode is off and only named non-default profiles and loose local traits exist
@@ -60,7 +62,7 @@ Profile mode SHALL be off when no enabled state has been persisted in the chosen
 
 ### Requirement: Enabled profile selection through user settings and environment
 
-While mode is on, Overspec SHALL select one profile using `OVERSPEC_PROFILE`, then the saved user-level selection, then implicit default. An explicitly provided empty, invalid, or missing selection SHALL fail without falling back. An absent implicit default SHALL allow local-only composition. `profile use NAME` SHALL save a user-level selection only while mode is enabled and SHALL report when an environment selection overrides it. Environment selection SHALL not persist itself or turn mode on. A project profile SHALL continue to shadow a same-name user profile completely; activation SHALL not pin profile sources or suppress local overrides.
+While mode is on, Overspec SHALL select one profile using `OVERSPEC_PROFILE`, then the saved user-level selection, then implicit default. An explicitly provided empty, invalid, or missing selection SHALL fail without falling back. An absent implicit default SHALL allow standalone-only composition, including local-only composition when there are no external sources. `profile use NAME` SHALL save a user-level selection only while mode is enabled and SHALL report when an environment selection overrides it. Environment selection SHALL not persist itself or turn mode on. External profiles SHALL participate in the named catalog using saucepan-source-discovery priority. A user profile SHALL override a same-name external profile, and a project profile SHALL continue to shadow both completely; activation SHALL not pin profile sources or suppress local overrides.
 
 The revised profile interface SHALL have no project-level persisted selection, no invocation `--profile` option, no activation-name argument, and no compatibility aliases for the replaced interface. Old project profile selectors SHALL not affect resolution. User-home selection through --home and OVERSPEC_HOME SHALL remain available in both modes.
 
@@ -126,7 +128,7 @@ Each trait SHALL express one responsibility in a small, self-contained body. A d
 
 ### Requirement: Profile-independent identity and local overrides
 
-Overspec SHALL resolve identities across all three trait types by name. A local trait with the same name as a profile trait SHALL replace the complete profile declaration before evaluation. Duplicates within the selected profile or within the local layer SHALL fail with both origins. Surviving names SHALL be unique regardless of their type or attachment. Local overrides SHALL retain the inherited declaration's ordering position within its effective phase; additional local traits SHALL follow profile traits. Diagnostics SHALL retain file/profile origins even though emitted identity is name-only.
+Overspec SHALL resolve identities across all three trait types by name. It SHALL apply complete declarations from lowest to highest priority: the effective selected profile, external standalone source layers in their configured order, the user-authored standalone layer, then the project-local standalone layer. A later layer's same-name trait SHALL replace the entire earlier declaration before reference validation and evaluation; no assertions, actions, body, details, phase, or attachment SHALL be inherited implicitly. Duplicates within the selected profile, within one external repository's standalone layer, or within either authored standalone layer SHALL fail with both origins. Surviving names SHALL be unique regardless of type or attachment. Overrides SHALL retain the inherited name's insertion position before the stable phase ordering; additional names SHALL follow earlier-layer names within their phase. Diagnostics SHALL retain file/profile origins and external source/revision provenance for winners and overridden declarations even though emitted identity is name-only.
 
 #### Scenario: Override a profile trait locally
 - **WHEN** a profile and a local file both declare `require-codegraph`
