@@ -16,7 +16,7 @@
 A trait has a short stable name and a compact, independently actionable `body`.
 Optional `details` supplies literal elaboration on request, never automatically
 inserted into config. An `attach` selects `context`, `rules.<artifact-id>`,
-`operations.<operation>.guidance` for apply, archive, explore, and propose. The entire suffix
+`operations.apply.guidance`, or `operations.archive.guidance`. The entire suffix
 after `rules.` is one literal artifact ID. Choose context for cross-operation
 guidance and an operation attachment for a specific workflow stage. Lifetimes are
 `compiletime-trait` at init/update, ordinary `trait` at sync/static resolve, and
@@ -176,7 +176,3 @@ removing records. Use the installed OpenSpec skills and zmem-author-commits for
 their actual procedures; these outcomes are not invented Overspec subcommands.
 Final commits include retained OpenSpec records and their authored persistent
 vars. Never stage current files, including when an archive move carries them.
-
-## Native workflow policy controls
-
-See [workflow-policies.md](workflow-policies.md) for all off switches, BDD detection/selection, stage attachments, and explicit skill/schema prerequisites.

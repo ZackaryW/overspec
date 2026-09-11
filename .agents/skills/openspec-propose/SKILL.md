@@ -28,16 +28,7 @@ When the user is ready to implement, they must start the apply workflow explicit
 
 **Store selection:** If the user names a store (a store is a standalone OpenSpec repo registered on this machine) or the work lives in one, run `openspec store list --json` to discover registered store ids, then pass `--store <id>` on the commands that read or write specs and changes (`new change`, `status`, `instructions`, `list`, `show`, `validate`, `archive`, `doctor`, `context`, `schemas`, `view`). Once selected, treat `--store <id>` as sticky for the rest of the workflow. Every unscoped example of those commands below is shorthand: before running it, append the flag. For example, run `openspec status --change "<name>" --json --store "<id>"`, not the unscoped form shown below. Other commands do not take the flag. Hints printed by commands already carry the flag; keep it on follow-ups. Without a store, commands act on the nearest local `openspec/` root.
 
-**Current operation inputs**
-
-Before consultation, run `openspec instructions propose --json`, preserving the selected `--store <id>`. If a change is explicitly selected, append `--change <name>`; otherwise omit it. Use returned root/planningHome and, only when present, changeRoot. Do not invent a change directory. Refresh these inputs after selecting or creating an actual change, before its proposal is drafted.
-
-Read context as required project instruction input and operationGuidance as additive advice. Execute applicable returned runtime resolution instructions from their project root; pass the actual changeRoot only when it exists. Preserve explicit user choices, CLI-controlled scope, and the built-in workflow boundaries. Report unavailable commands or referenced skills and leave dependent work pending. Do not repeat settled decisions. Wait for answers to required material choices; elapsed time is not an answer.
-
-
 **Input**: The user's request should include a change name (kebab-case) OR a description of what they want to build.
-
-**Delegated preparation**: Pass planning-only intent to every delegated stage. If its procedure includes implementation or test execution for new code, produce only its plan and record that work pending for apply.
 
 **Steps**
 

@@ -37,7 +37,7 @@ operations:
     guidance:
       - | # over:bdd-behave,bdd-cucumber,bdd-flutter,evidence-apply,integration-test-policies
         From this project's root, run:
-        overspec trait resolve --resolution 73d0b038dceeff0286e1ad50b8602ae50ec8eacf87bb538e6487dab149131e0c --attach operations.apply.guidance --trait bdd-behave --trait bdd-cucumber --trait bdd-flutter --trait evidence-apply --trait integration-test-policies
+        overspec trait resolve --resolution 4da47f779cc7e51239dee52b45a53d227c97637d5145bc32655d7a7b9a618457 --attach operations.apply.guidance --trait bdd-behave --trait bdd-cucumber --trait bdd-flutter --trait evidence-apply --trait integration-test-policies
         Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
         For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json (preserving the selected --store), then append --change-root <changeRoot> to this command. Without a selected change, use project variables only.
   archive:
@@ -48,34 +48,26 @@ operations:
         retained by the chosen outcome; use zmem-author-commits for the final review when available.
       - | # over:do-not-archive-openspec-change
         From this project's root, run:
-        overspec trait resolve --resolution 73d0b038dceeff0286e1ad50b8602ae50ec8eacf87bb538e6487dab149131e0c --attach operations.archive.guidance --trait do-not-archive-openspec-change
-        Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
-        For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json (preserving the selected --store), then append --change-root <changeRoot> to this command. Without a selected change, use project variables only.
-  explore:
-    guidance:
-      - | # over:decision-explore,prototype-explore
-        From this project's root, run:
-        overspec trait resolve --resolution 73d0b038dceeff0286e1ad50b8602ae50ec8eacf87bb538e6487dab149131e0c --attach operations.explore.guidance --trait decision-explore --trait prototype-explore
-        Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
-        For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json (preserving the selected --store), then append --change-root <changeRoot> to this command. Without a selected change, use project variables only.
-  propose:
-    guidance:
-      - | # over:decision-propose,prototype-propose
-        From this project's root, run:
-        overspec trait resolve --resolution 73d0b038dceeff0286e1ad50b8602ae50ec8eacf87bb538e6487dab149131e0c --attach operations.propose.guidance --trait decision-propose --trait prototype-propose
+        overspec trait resolve --resolution 4da47f779cc7e51239dee52b45a53d227c97637d5145bc32655d7a7b9a618457 --attach operations.archive.guidance --trait do-not-archive-openspec-change
         Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
         For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json (preserving the selected --store), then append --change-root <changeRoot> to this command. Without a selected change, use project variables only.
 rules:
+  proposal:
+    - | # over:decision-propose,prototype-propose
+      From this project's root, run:
+      overspec trait resolve --resolution 4da47f779cc7e51239dee52b45a53d227c97637d5145bc32655d7a7b9a618457 --attach rules.proposal --trait decision-propose --trait prototype-propose
+      Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
+      For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json (preserving the selected --store), then append --change-root <changeRoot> to this command. Without a selected change, use project variables only.
   tasks:
     - | # over:evidence-tasks,utility-mature
       From this project's root, run:
-      overspec trait resolve --resolution 73d0b038dceeff0286e1ad50b8602ae50ec8eacf87bb538e6487dab149131e0c --attach rules.tasks --trait evidence-tasks --trait utility-mature
+      overspec trait resolve --resolution 4da47f779cc7e51239dee52b45a53d227c97637d5145bc32655d7a7b9a618457 --attach rules.tasks --trait evidence-tasks --trait utility-mature
       Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
       For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json (preserving the selected --store), then append --change-root <changeRoot> to this command. Without a selected change, use project variables only.
   design:
     - | # over:utility-plan
       From this project's root, run:
-      overspec trait resolve --resolution 73d0b038dceeff0286e1ad50b8602ae50ec8eacf87bb538e6487dab149131e0c --attach rules.design --trait utility-plan
+      overspec trait resolve --resolution 4da47f779cc7e51239dee52b45a53d227c97637d5145bc32655d7a7b9a618457 --attach rules.design --trait utility-plan
       Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
       For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json (preserving the selected --store), then append --change-root <changeRoot> to this command. Without a selected change, use project variables only.
 context: |
@@ -91,7 +83,7 @@ context: |
   <!-- over:zmem-commits -->
 
   From this project's root, run:
-  overspec trait resolve --resolution 73d0b038dceeff0286e1ad50b8602ae50ec8eacf87bb538e6487dab149131e0c --attach context --trait tdd --trait zuu
+  overspec trait resolve --resolution 4da47f779cc7e51239dee52b45a53d227c97637d5145bc32655d7a7b9a618457 --attach context --trait decision-explore --trait prototype-explore --trait tdd --trait zuu
   Supply --context-file <path> when current invocation context is available, and apply the returned guidance to this operation.
   For an active change, obtain changeRoot from OpenSpec using openspec status --change <name> --json (preserving the selected --store), then append --change-root <changeRoot> to this command. Without a selected change, use project variables only.
-  <!-- over:tdd,zuu -->
+  <!-- over:decision-explore,prototype-explore,tdd,zuu -->

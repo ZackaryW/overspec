@@ -14,16 +14,7 @@ Fast-forward through artifact creation - generate everything needed to start imp
 
 **Store selection:** If the user names a store (a store is a standalone OpenSpec repo registered on this machine) or the work lives in one, run `openspec store list --json` to discover registered store ids, then pass `--store <id>` on the commands that read or write specs and changes (`new change`, `status`, `instructions`, `list`, `show`, `validate`, `archive`, `doctor`, `context`, `schemas`, `view`). Once selected, treat `--store <id>` as sticky for the rest of the workflow. Every unscoped example of those commands below is shorthand: before running it, append the flag. For example, run `openspec status --change "<name>" --json --store "<id>"`, not the unscoped form shown below. Other commands do not take the flag. Hints printed by commands already carry the flag; keep it on follow-ups. Without a store, commands act on the nearest local `openspec/` root.
 
-**Current operation inputs**
-
-Before consultation, run `openspec instructions propose --json`, preserving the selected `--store <id>`. If a change is explicitly selected, append `--change <name>`; otherwise omit it. Use returned root/planningHome and, only when present, changeRoot. Do not invent a change directory. Refresh these inputs after selecting or creating an actual change, before its proposal is drafted.
-
-Read context as required project instruction input and operationGuidance as additive advice. Execute applicable returned runtime resolution instructions from their project root; pass the actual changeRoot only when it exists. Preserve explicit user choices, CLI-controlled scope, and the built-in workflow boundaries. Report unavailable commands or referenced skills and leave dependent work pending. Do not repeat settled decisions. Wait for answers to required material choices; elapsed time is not an answer.
-
-
 **Input**: The user's request should include a change name (kebab-case) OR a description of what they want to build.
-
-**Delegated preparation and resume**: Follow bounded preparation explicitly delegated by native stage instructions, including its verification, before reporting that preparation complete. On resume, read instructions for existing artifacts in the required set and inspect delegated completion evidence; file existence alone is insufficient. Execute only enabled, applicable preparation and leave remaining application implementation for apply. Report missing skills or unresolved decisions and keep dependent work pending. Never infer completion from a generated checklist.
 
 **Steps**
 
@@ -36,7 +27,7 @@ Read context as required project instruction input and operationGuidance as addi
 
    **IMPORTANT**: Do NOT proceed without understanding what the user wants to build.
 
-2. **Create the change directory (or resume the explicitly selected existing change)**
+2. **Create the change directory**
    ```bash
    openspec new change "<name>"
    ```
@@ -122,5 +113,5 @@ After completing all artifacts, summarize:
 - Create every artifact the apply phase transitively depends on, not just the ids listed in `apply.requires`
 - Always read dependency artifacts before creating a new one - re-read from disk, not from conversation memory (files may have changed since you last saw them)
 - If context is critically unclear, ask the user - but prefer making reasonable decisions to keep momentum
-- If a change with that name already exists and the user requested continuation, resume it without recreating its directory; otherwise ask which change to use
+- If a change with that name already exists, suggest continuing that change instead
 - Verify each artifact file exists after writing before proceeding to next

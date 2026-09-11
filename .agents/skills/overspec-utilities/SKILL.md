@@ -19,6 +19,16 @@ decisions block their dependent work; wait for explicit answers.
 
 ## Plan
 
+Start by asking whether this accepted change needs any implementation at all.
+For a trait migration, assess whether existing assertions, actions, grouped
+conditions, variables, and attachments already express the requested guidance.
+If they do, conclude **no new assertions, actions, or utilities needed**. Record
+that assessment and return; utility maturation and RED/GREEN are not applicable.
+Validate the authored traits and resolved guidance proportionally. Do not invent
+new detectors, source changes, test suites, or disposable demonstrations merely
+to exercise the procedure. An actual missing capability is a separate scope
+decision, not automatic permission to expand a trait update.
+
 Read accepted proposal/specs, relevant implementation, tests, dependencies, and
 repository memory. Use the project's established discovery tools. Perform a
 Ponytail assessment: derive necessary responsibilities, inspect existing project

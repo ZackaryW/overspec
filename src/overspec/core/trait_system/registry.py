@@ -43,7 +43,6 @@ class Registry:
 
 
 def builtins() -> Registry:
-    from overspec.core.assertions.bdd_framework import BddFrameworkAssertion
     from overspec.core.assertions.which import WhichAssertion
     from overspec.core.assertions.files_exist import FilesExistAssertion
     from overspec.core.assertions.python_dependency import PythonDependencyAssertion
@@ -59,7 +58,6 @@ def builtins() -> Registry:
 
     registry = Registry()
     for name, handler in (
-        ("bdd-framework", BddFrameworkAssertion),
         ("which", WhichAssertion),
         ("files-exist", FilesExistAssertion),
         ("python-dependency", PythonDependencyAssertion),

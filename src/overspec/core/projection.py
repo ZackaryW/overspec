@@ -1,19 +1,18 @@
 """Native YAML projection with ownership and scalar-header provenance."""
 
-import re
-from collections.abc import Mapping
 from copy import deepcopy
 from io import StringIO
+from collections.abc import Mapping
+import re
 
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
-from ruamel.yaml.error import YAMLError
 from ruamel.yaml.scalarstring import LiteralScalarString
-from zuu.case5 import ConfinedPath, TargetState
+from ruamel.yaml.error import YAMLError
 from zuu.case13 import deep_get
 
-from .operations import OPERATIONS
 from .storage import digest
+from zuu.case5 import ConfinedPath, TargetState
 
 
 def config_target(root):
@@ -37,7 +36,7 @@ def parse_yaml(text):
         operations = document["operations"]
         if not isinstance(operations, Mapping):
             raise ValueError("operations must be a mapping")
-        for operation in OPERATIONS:
+        for operation in ("apply", "archive"):
             if operation in operations and not isinstance(
                 operations[operation], Mapping
             ):
@@ -50,7 +49,7 @@ def destinations(document):
     if isinstance(rules, Mapping):
         for key, value in rules.items():
             yield "rules." + str(key), value
-    for operation in OPERATIONS:
+    for operation in ("apply", "archive"):
         yield (
             f"operations.{operation}.guidance",
             deep_get(document, ["operations", operation, "guidance"], default=None),
@@ -99,7 +98,7 @@ def project_yaml(original, contributions):
     if "operations" in doc:
         # Independently copy each modified ancestor: shared aliases may point at unowned data.
         doc["operations"] = deepcopy(doc["operations"])
-        for operation in OPERATIONS:
+        for operation in ("apply", "archive"):
             if operation in doc["operations"]:
                 doc["operations"][operation] = deepcopy(doc["operations"][operation])
                 doc["operations"][operation].pop("guidance", None)
@@ -127,7 +126,7 @@ def project_yaml(original, contributions):
             raise ValueError("Rendered context exceeds 50 KiB")
         doc["context"] = LiteralScalarString(context)
     if "operations" in doc:
-        for operation in OPERATIONS:
+        for operation in ("apply", "archive"):
             if operation in doc["operations"] and not doc["operations"][operation]:
                 del doc["operations"][operation]
         if not doc["operations"]:

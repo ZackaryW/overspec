@@ -3,7 +3,7 @@ name = "bdd-flutter"
 attach = "operations.apply.guidance"
 body = """Follow the Flutter project's integration_test layout, fixtures, binding, and configured device or test runner. Verify user-visible outcomes through the running application boundary.
 """
-details = """Activated by explicit bdd selection or Flutter SDK evidence plus its SDK integration_test dependency or Dart integration sources. Generic Dart/Flutter language markers alone are insufficient. Report unavailable devices or runner prerequisites rather than claiming an execution result.
+details = """Activated when the existing bdd list contains "flutter" and bdd-flutter is not false. Selection supplies guidance only; inspect the project's existing framework configuration, fixtures, runner, and prerequisites before using it. It does not install tools or automatically parse manifests.
 """
 
 [[runtime-trait.assert.1.assertion]]
@@ -11,5 +11,6 @@ type = "~runtime-context-match"
 kv = "bdd-flutter=false"
 
 [[runtime-trait.assert.1.assertion]]
-type = "bdd-framework"
-name = "flutter"
+type = "runtime-context-includes"
+k = "bdd"
+includes = "flutter"

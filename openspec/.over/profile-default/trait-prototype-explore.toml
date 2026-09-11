@@ -1,8 +1,7 @@
 [[runtime-trait]]
 name = "prototype-explore"
-attach = "operations.explore.guidance"
-body = """Ask whether a bounded prototype is needed unless concrete current evidence establishes that none is needed. State the evidence when bypassing the choice.
-"""
+attach = "context"
+body = "During exploration: Ask whether a bounded prototype is needed unless concrete current evidence establishes that none is needed. State the evidence when bypassing the choice.\n"
 details = """A useful prototype answers one material feasibility question with a bounded scope and observable result. This policy does not authorize implementation during exploration; preserve the native exploration boundary and existing user authorization.
 """
 

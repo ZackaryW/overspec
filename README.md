@@ -1,14 +1,12 @@
 # overspec
 
 Overspec composes reusable traits into an existing OpenSpec project's native
-`context`, `rules`, and apply/archive/explore/propose `guidance`. OpenSpec remains responsible for
+`context`, `rules`, and apply/archive `guidance`. OpenSpec remains responsible for
 schemas, artifacts, and change lifecycle. Runtime guidance is advisory: OpenSpec
 shows a command to the agent; it does not execute that command automatically.
 
 Requires Python 3.12+ and the companion OpenSpec CLI supporting
-`instructions explore|propose` and apply/archive operation guidance. See the
-[workflow setup and controls](docs/workflow-policies.md) for the required companion
-build, native schema setup, stage attachments, and every policy off switch.
+`operations.apply.guidance` and `operations.archive.guidance` (tested with 1.12.0).
 
 ```sh
 uv sync
@@ -68,7 +66,7 @@ Obtain exact roots from `openspec status --change <name> --json`, preserving
 mutually exclusive with explicit roots. Setup-only preserves compilation, config,
 profile mode, and existing current-file contents. It never fetches profiles.
 
-Sync deliberately replaces all existing context and rules, plus apply/archive/explore/propose
+Sync deliberately replaces all existing context and rules, plus apply/archive
 guidance. Put any manual guidance you want to retain in traits before syncing.
 Other configuration values, including unknown keys and operation siblings, survive.
 Preview prints the target, candidate YAML, diff, resolution ID, and whether config
@@ -256,8 +254,8 @@ self-contained sentences. Optional literal `details` holds explanations or
 examples; omitted/blank details means no elaboration. Details are never automatically
 inserted into config or normal runtime output. There is no arbitrary body word limit.
 
-Attachments are `context`, `rules.<artifact-id>`, or `operations.<operation>.guidance`
-for apply, archive, explore, and propose. The whole suffix after `rules.` is a literal artifact
+Attachments are `context`, `rules.<artifact-id>`, `operations.apply.guidance`, or
+`operations.archive.guidance`. The whole suffix after `rules.` is a literal artifact
 ID: `rules.review.notes` targets `review.notes`.
 
 Context contributions end with `<!-- over:review -->`. Rule and operation list
@@ -268,19 +266,16 @@ bytes and modification time.
 ## Assertions, actions, and variables
 
 ```toml
-[[runtime-trait]]
+[[trait]]
 name = "zuu"
-attach = "context"
+attach = "operations.apply.guidance"
 body = "Prefer applicable public zuu APIs before writing equivalent utilities."
 
-[runtime-trait.assert.1]
-[[runtime-trait.assert.1.assertion]]
-type = "~runtime-context-match"
-kv = "zuu=false"
-[[runtime-trait.assert.1.assertion]]
+[trait.assert.1]
+[[trait.assert.1.assertion]]
 type = "files-exist"
 paths = [".python-version", "uv.lock"]
-[[runtime-trait.assert.1.assertion]]
+[[trait.assert.1.assertion]]
 type = "python-dependency"
 name = "zuu"
 ```
@@ -525,3 +520,7 @@ without Saucepan. Wheel tests build directly and from an sdist; installation can
 fetch declared dependencies when uncached. The optional real Saucepan test uses
 its own test store. No test modifies sibling repositories or the user store. Assertions and actions each implement an abstract
 base contract with one concrete handler per file under `src/overspec/core/`.
+
+## Configurable workflow traits
+
+See [workflow controls and stage attachments](docs/workflow-policies.md). Utility planning first assesses whether implementation is needed; trait-only changes can finish with no new assertions, actions, utilities, or RED/GREEN cycle.

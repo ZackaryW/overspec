@@ -1,8 +1,7 @@
 [[runtime-trait]]
 name = "decision-explore"
-attach = "operations.explore.guidance"
-body = """Present evidence-backed choices for unresolved material decisions, explain the recommendation and tradeoffs, and wait for explicit answers before dependent work. Preserve settled decisions.
-"""
+attach = "context"
+body = "During exploration: Present evidence-backed choices for unresolved material decisions, explain the recommendation and tradeoffs, and wait for explicit answers before dependent work. Preserve settled decisions.\n"
 details = """Use the available user-input panel when supported. Inspect facts before asking; do not ask users to repeat discoverable information. Keep prompts pending until answered. Elapsed time, a preselected default, and automatic continuation are not answers.
 """
 

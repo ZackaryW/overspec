@@ -45,14 +45,6 @@ changes and artifacts; Overspec composes guidance into its configuration.
 
 ## Work within the existing workflows
 
-For the configurable utility workflow, follow [references/workflow-policies.md](references/workflow-policies.md).
-Check native explore/propose instruction support and the `overspec-utilities` skill
-before claiming setup is complete. Installing the project-local `overspec` schema
-and selecting it are explicit setup actions; init, sync, and profile acquisition
-do not install schemas or skills. Keep ordinary setup usable without claiming the
-utility stage integration is active. Explain off controls and BDD selection when
-relevant; do not create user preferences automatically.
-
 After OpenSpec creates a later change, get its exact `changeRoot` from
 `openspec status --change <name> --json`, retaining `--store <id>` when selected.
 Run `overspec init --setup-only --project <root> --change-root <changeRoot>`.
@@ -87,3 +79,7 @@ Retained specs/archive records and authored `.vars.toml` belong in the final
 commit when their containing records are retained. `.current.toml` stays local
 under every outcome. This skill does not add a new archive CLI or duplicate the
 OpenSpec or zmem procedures.
+
+## Utility assessment
+
+Read [references/workflow-policies.md](references/workflow-policies.md) for the existing stage attachments and controls. For trait authoring, first assess whether existing assertions/actions suffice. If so, record no utility implementation needed; do not generate code, tests, or a demonstration to force a RED/GREEN cycle.
