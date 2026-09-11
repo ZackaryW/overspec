@@ -87,6 +87,7 @@ class Trait:
     actions: tuple
     source: dict = field(repr=False)
     provenance: dict | None = None
+    setting: str | None = None
 
     @property
     def predicates(self):

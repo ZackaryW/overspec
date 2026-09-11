@@ -1,5 +1,5 @@
 ---
-name: create-overspec-trait
+name: overspec-create-trait
 description: Create or revise Overspec TOML traits, including skill references, grouped assertions, lifetimes, and OpenSpec attachments. Use when adding reusable project guidance through traits or adapting existing guidance into a trait.
 ---
 
@@ -26,6 +26,10 @@ declaration format and condition rules.
 - Choose a short stable name, one evaluation lifetime, and one attachment. Use
   `trait` for conditions refreshed at sync, `compiletime-trait` for intentionally
   frozen init/update checks, and `runtime-trait` only for invocation-time inputs.
+- For a compiled project policy, add `setting = "key"` to let sync check a small
+  boolean publication gate. Missing enables; false hides the retained body. Do not
+  use runtime predicates merely to make a project policy configurable. The gate
+  does not rerun or undo compiled assertions/actions.
 - Keep the body brief and independently actionable. Put optional explanations or
   examples in literal `details`; details are not emitted into config automatically.
 - When asked to reference an existing skill, name that skill exactly in the body
@@ -65,6 +69,6 @@ inspect the preview, sync, and verify the emitted body/reference and source mark
 sync replaces owned guidance fields. Keep optional details out of generated text.
 
 For runtime traits, execute the snapshot-free runtime command with representative
-context to check its output. Sync emits one command per resolution/attachment,
+context to check its output. Sync emits one command per attachment,
 not unconditional runtime bodies. Report the source file, lifetime, attachment,
 applicability, and validation performed.

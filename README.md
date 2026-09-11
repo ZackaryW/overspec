@@ -390,6 +390,31 @@ never affect shared static guidance. Compile-time values remain frozen until upd
 compile-time definitions, details, activation, or configured inputs require update;
 ordinary edits need sync; runtime body and condition edits apply on the next invocation.
 
+## Compiled policies with sync-time settings
+
+Compile a reusable policy at init/update, then control its publication with a
+small setting check during sync:
+
+```toml
+[[compiletime-trait]]
+name = "review-policy"
+attach = "rules.tasks"
+setting = "review-policy"
+body = "State observable completion evidence for each task."
+```
+
+Set `[vars] review-policy = false` in the project's .vars.toml or .current.toml
+and run sync to hide it. Missing means enabled; present values must be boolean.
+Enabling reuses the same compiled body and cannot override a failed assertion.
+This gate controls publication only: matched history and compiled actions remain.
+Change-root variables do not control shared compiled policy publication. A key
+used in body interpolation remains a compiled input that requires update.
+
+Project-wide TDD, Zuu, consultation, evidence, and utility policies use these gates.
+BDD selections and archive flags remain runtime because they can vary by change.
+Use overspec-create-trait for authoring, overspec-configure for controls,
+overspec-sync for publication, and overspec-diagnose for read-only troubleshooting.
+
 ## Runtime commands and saved details
 
 ```toml

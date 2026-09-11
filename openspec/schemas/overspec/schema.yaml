@@ -140,9 +140,9 @@ artifacts:
   description: Technical design document with implementation details
   template: design.md
   instruction: |
-    First read current context and artifact rules. Execute applicable Overspec runtime commands with the exact changeRoot from native status (preserving --store). Treat returned bodies as current policy inputs; missing bodies mean those procedures are disabled. Report missing referenced skills and leave their work pending. Unanswered material choices must be settled before dependent work.
+    First read current context and artifact rules. Use direct policy guidance as supplied; execute only actual Overspec runtime commands with the exact changeRoot from native status (preserving --store). Treat direct or returned bodies as current policy inputs; missing applicable guidance means those procedures are disabled. Report missing referenced skills and leave their work pending. Unanswered material choices must be settled before dependent work.
 
-    When utility-plan guidance is returned, delegate its procedure to the overspec-utilities skill in plan mode, then create design.md using the native template below and link the accepted utility-plan.md. When disabled, do not invoke planning through this instruction. A supplied accepted plan can remain available for later maturation; if no utility is needed record why it is not applicable.
+    When utility-plan guidance is present, delegate its procedure to the overspec-utilities skill in plan mode, then create design.md using the native template below and link the accepted utility-plan.md. When disabled, do not invoke planning through this instruction. A supplied accepted plan can remain available for later maturation; if no utility is needed record why it is not applicable.
 
     Create the design document that explains HOW to implement the change.
 
@@ -180,9 +180,9 @@ artifacts:
   description: Implementation checklist with trackable tasks
   template: tasks.md
   instruction: |
-    First read current context and artifact rules. Execute applicable Overspec runtime commands with the exact changeRoot from native status (preserving --store). Treat returned bodies as current policy inputs; missing bodies mean those procedures are disabled. Report missing referenced skills and leave their work pending. Unanswered material choices must be settled before dependent work.
+    First read current context and artifact rules. Use direct policy guidance as supplied; execute only actual Overspec runtime commands with the exact changeRoot from native status (preserving --store). Treat direct or returned bodies as current policy inputs; missing applicable guidance means those procedures are disabled. Report missing referenced skills and leave their work pending. Unanswered material choices must be settled before dependent work.
 
-    When utility-mature guidance is returned during ff-change, delegate to overspec-utilities in mature mode using the accepted utility-plan.md. The procedure completes only planned utilities through observed RED and GREEN. On resume with tasks.md already present, inspect current plan/evidence and complete pending enabled utility work; artifact existence is not delegated completion. Application wiring and remaining integration stay pending for apply.
+    When utility-mature guidance is present during ff-change, delegate to overspec-utilities in mature mode using the accepted utility-plan.md. The procedure completes only planned utilities through observed RED and GREEN. On resume with tasks.md already present, inspect current plan/evidence and complete pending enabled utility work; artifact existence is not delegated completion. Application wiring and remaining integration stay pending for apply.
 
     During propose, pass planning-only intent and record implementation pending. When maturation is disabled, leave required utility work pending. If no valid plan exists, do not invent one under maturation. If the accepted plan establishes no utility work, record not applicable without artificial tests.
 

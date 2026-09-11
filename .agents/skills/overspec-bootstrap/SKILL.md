@@ -52,7 +52,7 @@ Execute emitted runtime commands with that same root; never guess an active
 change or bake its variables into shared config. OpenSpec shows these commands
 as guidance; it does not automatically execute them.
 
-For trait edits, use `create-overspec-trait`. For each meaningful source
+For trait edits, use `overspec-create-trait`. For each meaningful source
 implementation milestone and final post-archive commit work, use
 `zmem-author-commits`. Verify referenced skills are available; report a missing
 skill without inventing installation or copying its workflow here. Follow
@@ -83,3 +83,11 @@ OpenSpec or zmem procedures.
 ## Utility assessment
 
 Read [references/workflow-policies.md](references/workflow-policies.md) for the existing stage attachments and controls. For trait authoring, first assess whether existing assertions/actions suffice. If so, record no utility implementation needed; do not generate code, tests, or a demonstration to force a RED/GREEN cycle.
+
+## Focused follow-up skills
+
+Use overspec-configure for policy switches, variables, and profile selection;
+overspec-sync for publishing guidance; overspec-diagnose for read-only diagnosis.
+Compiled setting toggles require sync without an update. Source eligibility and
+body changes follow the normal init/update lifetime. Operation attachment alone
+is not a reason to author a runtime trait.

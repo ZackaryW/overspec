@@ -137,24 +137,28 @@ def test_default_profile_eligibility_and_seeded_guidance(project):
         "operations"
     ]["apply"]["guidance"]
     assert eligible == seeded
-    assert len(eligible) == 2
+    eligible_context = parse_yaml(config.read_text())["context"]
+    assert "<!-- over:tdd -->" in eligible_context
+    assert "<!-- over:zuu -->" in eligible_context
     assert "observe the failure" in show_details(project.root, "tdd")["details"]
     assert "observe the failure" not in config.read_text()
     for file in (python, lock, pyproject):
         original = file.read_bytes()
         file.unlink()
         project.sync()
-        assert parse_yaml(config.read_text())["operations"]["apply"]["guidance"] == [
-            eligible[0]
-        ]
+        assert parse_yaml(config.read_text())["context"] == eligible_context
+        project.initialize(update=True)
+        project.sync()
+        assert "<!-- over:zuu -->" not in parse_yaml(config.read_text())["context"]
+        assert "<!-- over:tdd -->" in parse_yaml(config.read_text())["context"]
         file.write_bytes(original)
+        project.initialize(update=True)
         project.sync()
         assert (
             parse_yaml(config.read_text())["operations"]["apply"]["guidance"]
             == eligible
         )
     pyproject.write_text('[project]\ndependencies=[]\n[tool.uv.sources]\nzuu="local"')
+    project.initialize(update=True)
     project.sync()
-    assert parse_yaml(config.read_text())["operations"]["apply"]["guidance"] == [
-        eligible[0]
-    ]
+    assert "<!-- over:zuu -->" not in parse_yaml(config.read_text())["context"]

@@ -126,6 +126,7 @@ def test_installed_default_lifecycle_and_overrides(installed, tmp_path):
         "openspec/.over/profile-default/trait-tdd.toml",
         declaration("tdd", body="Workspace override"),
     )
+    invoke(installed, project, home, "update", "--json")
     invoke(installed, project, home, "sync", "--json")
     assert "Workspace override" in config.read_text()
     invoke(installed, project, home, "profile", "activate", "--json")

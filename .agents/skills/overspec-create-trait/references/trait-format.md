@@ -170,3 +170,26 @@ files when their records are retained; keep current files local.
 ## Reuse existing conditions
 
 For configurable guidance, use runtime traits with a leading negated runtime-context-match for a typed-false policy control. Use runtime-context-includes for explicit list selection, including bdd framework names. Do not add handlers, actions, attachment types, or test suites for a trait-only migration. If an actual capability is missing, surface it as separate scope.
+
+## Compiled publication settings
+
+A compiletime-trait may declare `setting = "tdd"`. This is a literal, nonblank
+project variable key. Other lifetimes reject the field. Init/update compiles the
+trait independently of the switch; sync checks it only for an eligible,
+otherwise-unsuppressed compiled body. Missing enables, false hides, and a present
+nonboolean value fails. Use project .vars.toml for shared policy or .current.toml
+for a local override, following static precedence. Change files/runtime JSON do
+not affect shared publication. The gate preserves matched history and compiled
+action effects. Re-enabling cannot bypass a failed compile-time assertion.
+
+```toml
+[[compiletime-trait]]
+name = "review-policy"
+attach = "rules.tasks"
+setting = "review-policy"
+body = "State observable completion evidence for each task."
+```
+
+Setting-only changes need sync, not update. If the setting key also appears in a
+compiled body interpolation, its value is a compiled input and needs update.
+Explain output reports both eligibility and the setting decision.

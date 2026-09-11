@@ -146,7 +146,7 @@ def test_documented_toml_and_help_are_executable():
     root = Path(__file__).resolve().parents[1]
     for relative in [
         "README.md",
-        ".agents/skills/create-overspec-trait/references/trait-format.md",
+        ".agents/skills/overspec-create-trait/references/trait-format.md",
         ".agents/skills/overspec-bootstrap/references/controls.md",
     ]:
         for text in re.findall(

@@ -1,47 +1,54 @@
-# Workflow traits using existing capabilities
+# Workflow policies and lifetimes
 
-This migration changes guidance and configuration only. No new assertion, action,
-utility, native command, or test suite is required.
+Project-wide policies compile at init/update and use a small boolean setting gate
+at sync. Operation attachments describe where guidance is delivered, not when its
+conditions must run.
 
-| Guidance | Existing attachment |
-| --- | --- |
-| Utility assessment | rules.design |
-| Conditional utility maturation | rules.tasks |
-| Integration-test policies and evidence | operations.apply.guidance |
-| Exploration consultation | context, with an exploration-only body |
-| Proposal consultation | rules.proposal |
-| Task evidence | rules.tasks |
-| Selected BDD frameworks | operations.apply.guidance |
-| TDD and applicable zuu reuse | context |
+| Guidance | Attachment | Control |
+| --- | --- | --- |
+| Utility assessment | rules.design | utility-plan |
+| Conditional utility maturation | rules.tasks | utility-mature |
+| Integration-test policies | operations.apply.guidance | integration-test-policies |
+| Exploration/proposal consultation | context / rules.proposal | decision-choice |
+| Exploration/proposal prototype choice | context / rules.proposal | prototype-choice |
+| Task/apply evidence | rules.tasks / operations.apply.guidance | evidence-first |
+| TDD and eligible Zuu reuse | context | tdd / zuu |
 
-Use boolean false under [vars] in optional committed .vars.toml or local ignored
-.current.toml, at the project .over or exact selected change root. Controls are:
-utility-plan, utility-mature, integration-test-policies, decision-choice,
-prototype-choice, evidence-first, tdd, zuu, bdd-behave, bdd-cucumber, bdd-flutter.
-Missing controls retain their normal applicability; string "false" is not boolean
-false. Runtime overrides use existing precedence and require no resync.
+These declarations use `compiletime-trait` with `setting = "control-key"`.
+Put controls under [vars] in project openspec/.over/.vars.toml (shared) or
+.current.toml (local). Existing project/user config defaults also participate.
+Missing means enabled; a referenced setting must be a real boolean. Change-root
+files do not affect these shared policies. Edit a switch and sync; update is only
+needed when compiled declarations/body inputs change or eligibility needs refresh.
+Zuu's file/dependency assertions remain compiled, so enabling its setting cannot
+make an ineligible project match.
 
 ```toml
 [vars]
 utility-mature = false
+```
+
+BDD framework selection and the temporary-change archive flag remain runtime.
+They can vary by selected change: project defaults, selected change .vars/.current,
+and invocation JSON participate through the existing precedence.
+
+```toml
+[vars]
 bdd = ["behave", "cucumber"]
 bdd-behave = false
 ```
 
-BDD selection uses the existing runtime-context-includes assertion. Missing or
-empty bdd selects none. Individual false controls win. There is no new automatic
-manifest detector or new invalid-selection validation. Framework guidance asks the
-agent to inspect the project's actual fixtures, configuration, and runner.
+Missing/empty bdd selects none; individual false disables a selected framework.
+No manifest detector or new framework assertion is introduced. Runtime commands
+load current definitions and values without a saved resolution ID.
 
-The optional project-local overspec schema delegates assessment from design and
-conditional utility maturation from tasks through existing native instructions.
-Install its referenced overspec-utilities skill explicitly when selecting that
-schema. Sync does not install skills or schemas. No new OpenSpec build is needed.
-The source-generated native workflow skills remain unchanged. Existing artifact
-status is file-based; it does not prove delegated work ran or add automatic resume
-orchestration.
+The project-local overspec schema delegates utility assessment from design and
+conditional maturation from tasks to overspec-utilities. Direct compiled guidance
+is a policy input; only actual runtime commands need execution. The skill must
+be available in the target environment; sync does not install skills or schemas.
+No native OpenSpec source changes are needed. Artifact existence does not prove
+utility work ran. If existing APIs suffice, record no new utilities needed and
+skip utility RED/GREEN; real application behavior changes still need focused TDD.
 
-For this trait migration, utility assessment concludes: no new assertions, actions,
-or utilities needed. RED/GREEN is not applicable. Parse declarations and inspect
-inventory, supported attachments, controls, and resolved guidance. Do not create
-code or a disposable exercise to manufacture work for the planning process.
+Use overspec-create-trait to author policies, overspec-configure to change controls,
+overspec-sync to publish guidance, and overspec-diagnose to explain an outcome.

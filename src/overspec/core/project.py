@@ -152,6 +152,24 @@ class Project:
             prior=compiled["static"],
             values=inputs,
         )
+        for trait in traits:
+            if (
+                trait.setting is None
+                or trait.name not in result["matched"]
+                or trait.name in result["suppressed"]
+            ):
+                continue
+            enabled = inputs.get(trait.setting, True)
+            if type(enabled) is not bool:
+                raise ValueError(
+                    f"{trait.origin}: setting {trait.setting} for {trait.name} must be boolean"
+                )
+            result["decisions"][trait.name]["setting"] = {
+                "key": trait.setting, "enabled": enabled,
+            }
+            if not enabled:
+                result["suppressed"].append(trait.name)
+        result["suppressed"].sort()
         return {
             "version": 2,
             "root": str(self.root),

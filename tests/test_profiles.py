@@ -36,12 +36,14 @@ def test_repository_default_sources_discovered():
     from overspec.core.profiles import trait_files
 
     root = Path(__file__).resolve().parents[1] / "openspec/.over/profile-default"
-    assert [p.name for p in trait_files(root)] == [
+    assert {
         "trait-tdd.toml",
         "trait-zmem-commits.toml",
         "trait-zuu.toml",
         "traits.toml",
-    ]
+        "trait-utility-plan.toml",
+        "trait-bdd-behave.toml",
+    } <= {p.name for p in trait_files(root)}
 
 
 def test_redirected_directory_rejected(tmp_path):

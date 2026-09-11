@@ -1,11 +1,8 @@
-[[runtime-trait]]
+[[compiletime-trait]]
 name = "integration-test-policies"
+setting = "integration-test-policies"
 attach = "operations.apply.guidance"
 body = """Verify integration behavior through actual public inputs and observable outputs or state. Keep pure case matrices in unit tests, and use controlled external dependencies for repeatability.
 """
 details = """Exercise meaningful success and failure paths at the boundary the change affects. Mock-call counts and source matching alone are not integration evidence. Changes without runtime effects need appropriate artifact validation, not artificial behavioral tests.
 """
-
-[[runtime-trait.assert.1.assertion]]
-type = "~runtime-context-match"
-kv = "integration-test-policies=false"

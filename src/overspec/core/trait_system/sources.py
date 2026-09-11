@@ -24,7 +24,7 @@ def parse_trait(data, phase, origin, registry=None):
         if phase not in PHASES or not isinstance(data, dict):
             raise ValueError("Invalid trait declaration")
         required = {"name", "attach", "body"}
-        allowed = required | {"details", "assert", "assert_or_grouping", "actions"}
+        allowed = required | {"details", "assert", "assert_or_grouping", "actions", "setting"}
         if not required <= data.keys() or data.keys() - allowed:
             raise ValueError("Missing required or unknown trait fields")
         name = nonblank(data["name"], "name")
@@ -37,6 +37,11 @@ def parse_trait(data, phase, origin, registry=None):
         if "details" in data and not isinstance(details, str):
             raise ValueError("details must be a string")
         details = details if details and details.strip() else None
+        setting = None
+        if "setting" in data:
+            if phase != "compiletime-trait":
+                raise ValueError("setting is only supported on compiletime-trait")
+            setting = nonblank(data["setting"], "setting")
         condition = parse_condition(data, registry)
         if not isinstance(data.get("actions", []), list):
             raise ValueError("actions must be a list")
@@ -54,6 +59,7 @@ def parse_trait(data, phase, origin, registry=None):
             condition,
             actions,
             source,
+            setting=setting,
         )
     except (ValueError, TypeError) as exc:
         raise ValueError(f"{origin}: {exc}") from exc

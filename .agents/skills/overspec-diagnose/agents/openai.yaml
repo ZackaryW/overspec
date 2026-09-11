@@ -1,0 +1,3 @@
+interface:
+  display_name: "Overspec Diagnose"
+  short_description: "Trace missing or unexpected trait guidance"

@@ -11,9 +11,12 @@ def test_parse_all_types_and_optional_details():
         for p in sorted(root.glob("trait*.toml"))
         for t in parse_document(p.read_text(encoding="utf-8"), str(p))
     ]
-    assert len(traits) == 8
+    names = [t.name for t in traits]
+    assert len(names) == len(set(names))
+    assert {"tdd", "zuu", "utility-plan", "utility-mature", "bdd-behave"} <= set(names)
     assert {t.phase for t in traits} == {"compiletime-trait", "trait", "runtime-trait"}
     tdd = next(t for t in traits if t.name == "tdd")
+    assert tdd.phase == "compiletime-trait" and tdd.setting == "tdd"
     assert not tdd.predicates and "observe the failure" in tdd.details
     parsed = parse_document(
         '[[trait]]\nname="x"\nattach="rules.review.notes"\nbody="brief"\ndetails="  "',

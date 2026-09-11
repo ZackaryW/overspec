@@ -1,11 +1,8 @@
-[[runtime-trait]]
+[[compiletime-trait]]
 name = "evidence-apply"
+setting = "evidence-first"
 attach = "operations.apply.guidance"
 body = """Match completion claims to observed results and the full accepted scope. Report what was verified, what was not run, and what remains pending.
 """
 details = """Run checks appropriate to the changed behavior, inspect failures, and distinguish environment failures from implementation defects. Do not relabel partial work as completed, silently narrow requirements, or infer execution from test-file existence.
 """
-
-[[runtime-trait.assert.1.assertion]]
-type = "~runtime-context-match"
-kv = "evidence-first=false"

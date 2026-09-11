@@ -1,11 +1,8 @@
-[[runtime-trait]]
+[[compiletime-trait]]
 name = "decision-propose"
+setting = "decision-choice"
 attach = "rules.proposal"
 body = """Resolve material scope and behavior choices with evidence-backed prompts before proposing dependent work. Wait for explicit answers and preserve decisions already settled during exploration.
 """
 details = """Use the available user-input panel when supported. Keep the request concrete and explain why it matters. Do not re-open accepted choices without new conflicting evidence; unanswered prompts remain pending.
 """
-
-[[runtime-trait.assert.1.assertion]]
-type = "~runtime-context-match"
-kv = "decision-choice=false"

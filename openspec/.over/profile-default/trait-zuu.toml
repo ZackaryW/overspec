@@ -1,5 +1,6 @@
-[[runtime-trait]]
+[[compiletime-trait]]
 name = "zuu"
+setting = "zuu"
 attach = "context"
 body = """
 Prefer zuu's public APIs before writing equivalent utilities. Inspect the
@@ -25,15 +26,11 @@ repeatable. Mock-call assertions alone do not establish that the integration
 behaves correctly.
 """
 
-[runtime-trait.assert.1]
-[[runtime-trait.assert.1.assertion]]
-type = "~runtime-context-match"
-kv = "zuu=false"
-
-[[runtime-trait.assert.1.assertion]]
+[compiletime-trait.assert.1]
+[[compiletime-trait.assert.1.assertion]]
 type = "files-exist"
 paths = [".python-version", "uv.lock"]
 
-[[runtime-trait.assert.1.assertion]]
+[[compiletime-trait.assert.1.assertion]]
 type = "python-dependency"
 name = "zuu"

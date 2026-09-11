@@ -84,9 +84,10 @@ whole-feature completion.
 ## Inputs and records
 
 Native artifact instructions carry `context`, `rules`, `instruction`, dependencies,
-and resolved output paths. Each runtime command returns a list of resolved trait
-rows; use their `name` and `body`, not a guessed boolean from the native JSON.
-For example, returned `utility-plan` enables plan mode; no such row disables it.
+and resolved output paths. Direct policy guidance in the stage rules enables its referenced mode without a
+runtime call. When the input instead supplies a runtime command, execute it and
+use its returned names/bodies. Do not call the runtime resolver for a compiled
+policy. Absence of applicable direct or resolved guidance disables the mode.
 Obtain changeRoot and edit scope from current native status. Do not treat synthetic
 test inputs as proof that native caller integration works.
 

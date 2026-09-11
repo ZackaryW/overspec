@@ -20,7 +20,7 @@ inserted into config. An `attach` selects `context`, `rules.<artifact-id>`,
 after `rules.` is one literal artifact ID. Choose context for cross-operation
 guidance and an operation attachment for a specific workflow stage. Lifetimes are
 `compiletime-trait` at init/update, ordinary `trait` at sync/static resolve, and
-`runtime-trait` when its saved command is executed. Use create-overspec-trait for
+`runtime-trait` when its live command is executed. Use overspec-create-trait for
 authoring and schema validation.
 
 The two variable files can live in `openspec/.over/` and directly in one
@@ -178,3 +178,12 @@ removing records. Use the installed OpenSpec skills and zmem-author-commits for
 their actual procedures; these outcomes are not invented Overspec subcommands.
 Final commits include retained OpenSpec records and their authored persistent
 vars. Never stage current files, including when an archive move carries them.
+
+## Compiled setting gates
+
+`setting = "key"` on a compiletime-trait is checked only during sync/preview for
+eligible guidance. Static variable precedence applies; missing enables, false
+suppresses publication, and a nonboolean value fails. Use project .vars/.current
+or configured defaults, not a selected change file. Toggle and sync without
+updating compilation; assertions and compiled actions remain retained. Use
+overspec-configure, overspec-sync, and overspec-diagnose for these tasks.

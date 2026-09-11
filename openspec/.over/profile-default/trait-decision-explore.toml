@@ -1,10 +1,7 @@
-[[runtime-trait]]
+[[compiletime-trait]]
 name = "decision-explore"
+setting = "decision-choice"
 attach = "context"
 body = "During exploration: Present evidence-backed choices for unresolved material decisions, explain the recommendation and tradeoffs, and wait for explicit answers before dependent work. Preserve settled decisions.\n"
 details = """Use the available user-input panel when supported. Inspect facts before asking; do not ask users to repeat discoverable information. Keep prompts pending until answered. Elapsed time, a preselected default, and automatic continuation are not answers.
 """
-
-[[runtime-trait.assert.1.assertion]]
-type = "~runtime-context-match"
-kv = "decision-choice=false"

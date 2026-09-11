@@ -20,6 +20,9 @@ def condition_tree(node):
 def explanation_tree(item):
     tree = Tree(Text(f"Conditions: {item['name']}"))
     decision = item.get("decision") or {}
+    if "setting" in decision:
+        gate = decision["setting"]
+        tree.add(Text(f"Setting {gate['key']}: {str(gate['enabled']).lower()}"))
     if "condition" in decision:
         tree.add(condition_tree(decision["condition"]))
     else:

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Overspec Configure"
+  short_description: "Set policy switches, variables, and profiles"

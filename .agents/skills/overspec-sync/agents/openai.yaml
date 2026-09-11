@@ -1,0 +1,3 @@
+interface:
+  display_name: "Overspec Sync"
+  short_description: "Preview and publish trait guidance into config"
