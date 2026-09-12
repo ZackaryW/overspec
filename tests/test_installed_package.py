@@ -105,6 +105,10 @@ def test_installed_default_lifecycle_and_overrides(installed, tmp_path):
         installed, project, home, "init", "--change-root", str(change), "--json"
     )
     assert result["setup"]["success"] and result["compilation"]
+    assert (project / 'openspec/schemas/overspec/schema.yaml').is_file()
+    schema_check = subprocess.run(['openspec', 'schema', 'validate', 'overspec'], cwd=project,
+                                  env=installed[1], capture_output=True, text=True, shell=os.name == 'nt')
+    assert schema_check.returncode == 0, schema_check.stdout + schema_check.stderr
     result = invoke(installed, project, home, "sync", "--json")
     assert "over:tdd" in config.read_text()
     assert "over:zuu" not in config.read_text()  # This is not a Python/uv project.

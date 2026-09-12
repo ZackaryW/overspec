@@ -91,12 +91,18 @@ def section(data):
 def validate_state(root, state):
     try:
         if (
-            set(state) != {"version", "root", "compilation", "resolution", "sync"}
+            set(state) - {'schema'} != {"version", "root", "compilation", "resolution", "sync"}
             or type(state["version"]) is not int
             or state["version"] != 1
             or state["root"] != str(root)
         ):
             raise ValueError("format or root mismatch")
+        if 'schema' in state:
+            from .schema_assets import validate_baseline
+            saved_schema = state['schema']
+            if not isinstance(saved_schema, dict) or set(saved_schema) != {'id', 'data'} or saved_schema['id'] != digest(saved_schema['data']):
+                raise ValueError('invalid schema content/hash')
+            validate_baseline(saved_schema['data'])
         for name, version in [("compilation", 1), ("resolution", 2)]:
             saved = state[name]
             if saved is None:

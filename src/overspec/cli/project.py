@@ -23,10 +23,15 @@ from .common import (
 
 
 def compilation(ctx, home, project, vars_file, json_output, *, update):
-    identity = target(ctx, home, project).initialize(
-        update=update, values=json_file(vars_file)
-    )
-    if emit_json(ctx, json_output, {"compilation": identity}):
+    from overspec.core.schema_assets import install_schema
+    owner = target(ctx, home, project)
+    values = json_file(vars_file)
+    schema = install_schema(owner.root)
+    try:
+        identity = owner.initialize(update=update, values=values)
+    except (ValueError, OSError) as exc:
+        raise ValueError(f'Schema {schema["status"]}; compilation failed: {exc}') from exc
+    if emit_json(ctx, json_output, {"compilation": identity, 'schema': schema}):
         return
     console = Console(highlight=False)
     console.print(
@@ -37,6 +42,7 @@ def compilation(ctx, home, project, vars_file, json_output, *, update):
         )
     )
     console.print("Compilation: " + identity, markup=False, soft_wrap=True)
+    console.print('Schema: ' + schema['status'] + '. ' + schema['selection'])
     console.print("Next: overspec sync --dry-run", style="cyan")
 
 
@@ -83,12 +89,23 @@ def initialize(
     if not setup_only and storage.has_compilation(owner.root):
         raise ValueError("Compilation already exists; use update or init --setup-only")
     values = json_file(vars_file)
-    roots = change_roots if change_roots else discover_changes(owner.root, store=store)
-    result = {"setup": setup_variables(owner.root, roots)}
-    if result["setup"]["success"] and not setup_only:
-        result["compilation"] = owner.initialize(values=values)
+    from overspec.core.schema_assets import install_schema
+    schema = install_schema(owner.root) if not setup_only else None
+    try:
+        roots = change_roots if change_roots else discover_changes(owner.root, store=store)
+        result = {"setup": setup_variables(owner.root, roots)}
+        if schema is not None:
+            result['schema'] = schema
+        if result["setup"]["success"] and not setup_only:
+            result["compilation"] = owner.initialize(values=values)
+    except (ValueError, OSError) as exc:
+        if schema is not None:
+            raise ValueError(f'Schema {schema["status"]}; initialization incomplete: {exc}') from exc
+        raise
     if not emit_json(ctx, json_output, result):
         console = Console(highlight=False)
+        if schema is not None:
+            console.print('Schema: ' + schema['status'] + '. ' + schema['selection'])
         for item in result["setup"]["targets"]:
             console.print(
                 f"{item['status']}: {item['path']} (ignore: {item['ignore']})",
