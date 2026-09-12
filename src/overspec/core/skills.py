@@ -113,8 +113,8 @@ class Skills:
             raise ValueError("Select unique --name values or --all, exclusively")
         if operation == "restore" and not operation_id:
             raise ValueError("Restore requires an operation ID")
-        if force and operation not in {"update", "restore", "remove"}:
-            raise ValueError("Force is supported only for update, restore, and remove")
+        if force and operation not in {"restore", "remove"}:
+            raise ValueError("Force is supported only for restore and remove")
         self.bind_home()
         with Zuat(root=self.registry, home=self.agent_home) as service:
             if operation in {"history", "restore", "remove"}:
@@ -171,16 +171,9 @@ class Skills:
                                         ZuatRequest(agents=(agent,), assets=(asset,))
                                     ).to_dict()
                                 )
-                            elif operation == "update":
-                                row.update(
-                                    service.update_asset(asset, force=force).to_dict()
-                                )
                             else:
                                 row.update(
-                                    ok=False,
-                                    diagnostics=[
-                                        f"{inspection.classification}: install only accepts absent skills; inspect or update explicitly"
-                                    ],
+                                    service.update_asset(asset, force=True).to_dict()
                                 )
                             row["changed"] = row.get("data", {}).get(
                                 "changed",

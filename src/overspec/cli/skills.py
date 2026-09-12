@@ -1,11 +1,12 @@
 """Explicit user-level skill management with readable and structured outcomes."""
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Annotated
 
 import typer
 from rich.console import Console
 from rich.table import Table
+from zuu.case11 import Choice, CliSelector
 
 from .common import HomeOption, JsonOption, emit_json, scope
 
@@ -17,7 +18,7 @@ AgentOption = Annotated[
     list[str] | None,
     typer.Option(
         "--agent",
-        help="Explicit native agent; repeat for several.",
+        help="Native agent; repeat for several, or omit for an interactive checklist.",
         rich_help_panel="Selection",
     ),
 ]
@@ -25,7 +26,7 @@ NameOption = Annotated[
     list[str] | None,
     typer.Option(
         "--name",
-        help="Exact skill name; repeat, or choose --all.",
+        help="Exact skill name; repeat, choose --all, or omit for a checklist.",
         rich_help_panel="Selection",
     ),
 ]
@@ -49,7 +50,7 @@ ForceOption = Annotated[
     bool,
     typer.Option(
         "--force",
-        help="Explicitly replace conflicts where update/restore/remove supports it.",
+        help="Explicitly replace conflicts where restore/remove supports it.",
         rich_help_panel="Conflicts",
     ),
 ]
@@ -67,10 +68,49 @@ def execute(
     json_output,
     operation_id=None,
 ):
-    from overspec.core.skills import Skills
+    from overspec.core import skill_assets
+    from overspec.core.skills import AGENTS, Skills
 
     try:
-        result = Skills(home or (ctx.obj or {}).get("home"), agent_home).run(
+        manager = Skills(home or (ctx.obj or {}).get("home"), agent_home)
+        if names and all_skills:
+            raise ValueError("Select --name values or --all, exclusively")
+        if operation != "list" and not (json_output or (ctx.obj or {}).get("json")):
+            if not agents:
+                selection = CliSelector(
+                    "Select agents (--agent)", (Choice(a, a) for a in AGENTS)
+                ).select(required=True)
+                if selection.cancelled:
+                    typer.echo("Selection cancelled.")
+                    raise typer.Exit(130)
+                agents = selection.values
+            if not names and not all_skills:
+                if operation in {"history", "restore", "remove"}:
+                    history = manager.run("history", agents=agents, all_skills=True)[
+                        "history"
+                    ]
+                    candidates = sorted(
+                        {
+                            PurePosixPath(item["locator"]).name
+                            for event in history
+                            if operation != "restore"
+                            or event["operation_id"] == operation_id
+                            for item in (*event["before"], *event["after"])
+                        }
+                    )
+                else:
+                    candidates = [s.name for s in skill_assets.skill_catalog()]
+                if not candidates:
+                    raise ValueError("No skills available for this selection")
+                selection = CliSelector(
+                    "Select skills (--name or --all)",
+                    (Choice(n, n) for n in candidates),
+                ).select(required=True)
+                if selection.cancelled:
+                    typer.echo("Selection cancelled.")
+                    raise typer.Exit(130)
+                names = selection.values
+        result = manager.run(
             operation,
             agents=agents or (),
             names=names or (),
@@ -78,6 +118,8 @@ def execute(
             force=force,
             operation_id=operation_id,
         )
+    except typer.Exit:
+        raise
     except (ValueError, OSError, RuntimeError) as exc:
         result = {"ok": False, "operation": operation, "diagnostics": [str(exc)]}
     if not emit_json(ctx, json_output, result):
@@ -125,6 +167,31 @@ def catalog(
 
 
 def lifecycle_command(operation):
+    if operation != "remove":
+
+        def reconcile(
+            ctx: typer.Context,
+            home: HomeOption = None,
+            agent_home: AgentHomeOption = None,
+            agents: AgentOption = None,
+            names: NameOption = None,
+            all_skills: AllOption = False,
+            json_output: JsonOption = False,
+        ):
+            execute(
+                ctx,
+                operation,
+                home,
+                agent_home,
+                agents,
+                names,
+                all_skills,
+                False,
+                json_output,
+            )
+
+        return reconcile
+
     def command(
         ctx: typer.Context,
         home: HomeOption = None,
@@ -152,8 +219,8 @@ def lifecycle_command(operation):
 
 for name, description in {
     "status": "Inspect selected native skills against packaged content.",
-    "install": "Install absent skills for explicitly selected agents.",
-    "update": "Update owned skills; replacing conflicts requires --force.",
+    "install": "Install selected skills, replacing differing existing content with recovery history.",
+    "update": "Refresh existing skills, replacing differing content with recovery history.",
     "history": "Read recorded operations for exactly selected skills.",
     "remove": "Remove selected managed skills while retaining recovery history.",
 }.items():

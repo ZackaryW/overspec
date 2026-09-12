@@ -53,8 +53,10 @@ alone is not permission to fetch. Preview affected guidance through overspec-syn
 
 User-level skills use the explicit `overspec skill` lifecycle, independently of
 profile mode. Preserve --home (registry) and --agent-home (native user files);
-inspect status before requested install/update and do not imply that force grants
-permission to replace unrelated skills. Use overspec-bootstrap for this setup.
+inspect status before requested install/update. Those commands automatically replace
+differing selected content with recovery history. Scope selection through explicit
+flags or confirmed ZuU checklists; JSON/noninteractive use requires flags. Preserve
+restore/remove force controls. Use overspec-bootstrap for this setup.
 Project schema availability comes from normal init/update; changing config.yaml's
 schema selection is a separate requested edit. Setup-only and sync do not install
 schemas. Read the bootstrap controls reference for local conflicts and recovery.

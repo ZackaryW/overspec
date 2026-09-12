@@ -192,9 +192,12 @@ overspec-configure, overspec-sync, and overspec-diagnose for these tasks.
 ## Managed skills and project schema
 
 `overspec skill list` reads packaged skills without native installation. For native
-operations require explicit --agent and --name or --all. Use status before install
-or update; install accepts absent targets, current updates are no-ops, and replacing
-unowned/local edits requires explicit --force. Keep provider errors visible.
+operations select --agent and --name/--all, or use ZuU checklists when omitted in a
+terminal. JSON/noninteractive execution requires explicit selections. Cancellation
+changes no native skills. Install adds missing skills and refreshes existing ones;
+install/update automatically replace differing supported selected content, including
+unowned/local edits, with recovery history. Current managed content is a no-op.
+Install/update have no --force option; restore/remove retain it. Keep provider errors visible.
 User-level skill setup works without a project or profile activation.
 
 The selected Overspec home contains the ZuAT registry at `zuat` and its immutable

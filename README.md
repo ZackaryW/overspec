@@ -88,6 +88,7 @@ an OpenSpec project or profile activation:
 
 ```sh
 overspec skill list
+overspec skill install  # Interactive agent and skill checklists
 overspec skill status --agent codex --all
 overspec skill install --agent codex --all
 overspec skill update --agent codex --name overspec-bootstrap
@@ -99,10 +100,17 @@ overspec skill remove --agent codex --name overspec-bootstrap
 Repeat --agent or --name to select several; --name and --all are exclusive.
 Supported agent identifiers are codex, claude, kimi, and pi; actual availability
 and native-provider limitations are reported. `--json` provides undecorated results
-including individual operation IDs and partial failures. Install only accepts
-absent skills. Update preserves current content as a no-op; replacing unowned or
-locally edited content requires explicit `--force`. Invalid identities and provider
-boundaries remain errors. Existing OpenSpec installations are not silently adopted.
+including individual operation IDs and partial failures. Install adds missing skills
+and refreshes existing ones. Install and update automatically overwrite differing
+selected content, including supported unowned or locally edited skills, retaining
+recovery history. Current managed content is a no-op. Update targets existing skills.
+Neither command takes `--force`; invalid identities and provider boundaries remain errors.
+
+Omit agents or skill names in a terminal to use ZuU's checklists: arrow keys move,
+Space selects, A toggles all, and Enter confirms. Cancellation changes no native
+skills. History/remove/restore offer recorded skills, including names no longer
+packaged; restore keeps its required operation ID. JSON and noninteractive use
+require explicit selections and never open a checklist.
 
 ZuAT owns snapshots and recovery in `<Overspec home>/zuat`; the small sibling
 `zuat-home.json` binds that registry to its native user home. `--home` or

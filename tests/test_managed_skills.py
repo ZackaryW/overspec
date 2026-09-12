@@ -39,7 +39,8 @@ def call(manager, command, **kwargs):
     return manager.run(command, agents=["kimi"], names=["reviewer"], **kwargs)
 
 
-def test_public_lifecycle_restart_restore_and_historical_removal(managed):
+@pytest.mark.parametrize("operation", ["install", "update"])
+def test_public_lifecycle_restart_restore_and_historical_removal(managed, operation):
     root, source, catalog = managed
     manager = Skills(root / "state", root / "native")
     assert call(manager, "status")["results"][0]["classification"] == "absent"
@@ -51,9 +52,13 @@ def test_public_lifecycle_restart_restore_and_historical_removal(managed):
         for p in target.rglob("*")
         if p.is_file()
     }
-    assert call(manager, "update")["results"][0]["changed"] is False
+    history_before = call(manager, "history")["history"]
+    unchanged = call(manager, operation)
+    assert unchanged["ok"], unchanged
+    assert unchanged["results"][0]["changed"] is False
+    assert call(manager, "history")["history"] == history_before
     (source / "references/checks.md").write_text("B support")
-    updated = call(manager, "update")
+    updated = call(manager, operation)
     assert updated["ok"], updated
     operation = updated["results"][0]["operation_id"]
     assert (target / "references/checks.md").read_text() == "B support"
@@ -72,7 +77,8 @@ def test_public_lifecycle_restart_restore_and_historical_removal(managed):
     assert not target.exists()
 
 
-def test_conflict_force_restore_and_native_home_binding(managed):
+@pytest.mark.parametrize("operation", ["install", "update"])
+def test_automatic_replacement_restore_and_native_home_binding(managed, operation):
     root, _source, _ = managed
     manager = Skills(root / "state", root / "native")
     target = root / "native/.kimi-code/skills/reviewer"
@@ -82,24 +88,31 @@ def test_conflict_force_restore_and_native_home_binding(managed):
         "---\nname: reviewer\ndescription: Local\n---\nPrivate custom text\n"
     )
     before = document.read_bytes()
-    assert not call(manager, "install")["ok"]
-    assert not call(manager, "update")["ok"]
-    assert document.read_bytes() == before
-    updated = call(manager, "update", force=True)
+    updated = call(manager, operation)
     assert updated["ok"], updated
     document.write_text("---\nname: reviewer\ndescription: Local\n---\nLater edits\n")
-    operation = updated["results"][0]["operation_id"]
-    assert not call(manager, "restore", operation_id=operation)["ok"]
-    assert call(manager, "restore", operation_id=operation, force=True)["ok"]
+    operation_id = updated["results"][0]["operation_id"]
+    assert not call(manager, "restore", operation_id=operation_id)["ok"]
+    assert call(manager, "restore", operation_id=operation_id, force=True)["ok"]
     assert document.read_bytes() == before
     assert call(manager, "status")["results"][0]["classification"] == "unowned"
     assert not call(manager, "remove")["ok"]
+    assert document.read_bytes() == before
+    # Reconcile a now-managed skill after a local edit, retaining that edit for undo.
+    assert call(manager, "install")["ok"]
+    document.write_bytes(before)
+    refreshed = call(manager, operation)
+    assert refreshed["ok"], refreshed
+    assert document.read_bytes() != before
+    assert call(
+        manager, "restore", operation_id=refreshed["results"][0]["operation_id"]
+    )["ok"]
     assert document.read_bytes() == before
     with pytest.raises(ValueError, match="home"):
         call(
             Skills(root / "state", root / "other-native"),
             "restore",
-            operation_id=operation,
+            operation_id=operation_id,
         )
 
 
