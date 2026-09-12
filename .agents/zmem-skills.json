@@ -1,0 +1,20 @@
+{
+  "files": {
+    "zmem-author-commits/SKILL.md": "64bdcdcddabde3010a7545ca2be6bfb3526f865e90ac77671a4dd2f892bf14f1",
+    "zmem-author-commits/agents/openai.yaml": "13ce3dc3c984496e64425f6baa77796894c72f8ff0f530c5b917d05322ab4a8d",
+    "zmem-author-commits/references/annotation-vocabulary.md": "2e20892b374ed87c86cc4612bbefc29deab632ea76f9525acf667330203502d3",
+    "zmem-design-extensions/SKILL.md": "12850824efaff6d33d04f787b28174b36f6bcdb774a5594c116ac7a5c690c0ac",
+    "zmem-design-extensions/agents/openai.yaml": "6eb0d5df06c2f745d2f9782378b14bcf6e77ecb801e3e4ef169062192e6f9110",
+    "zmem-design-extensions/references/extension-api.md": "5ea81f793aab9d4eb7ff09c882f181efc9399268582e7c45400d61564e8b0088",
+    "zmem-query-memory/SKILL.md": "1b041d9b925480be8a245e82a6d63abbf6f9c60a6b864a79ab25651777085f02",
+    "zmem-query-memory/agents/openai.yaml": "b879afce1f2c56674ef4457e02e4823c37a2cccaa6fc214d966e030642372e07",
+    "zmem-query-memory/references/query-contract.md": "a71486c1ff4a0f6ab65ad08ca6766790a3875cf298e60ebf44e2d471a5e36ced"
+  },
+  "revision": "59aa3d5b420fc241b5b7b4f42931fb1095a4f17d",
+  "skills": [
+    "zmem-author-commits",
+    "zmem-query-memory",
+    "zmem-design-extensions"
+  ],
+  "source": "https://github.com/ZackaryW/zmem.git"
+}

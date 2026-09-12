@@ -1,0 +1,5 @@
+pre-commit:
+  commands:
+    sync-zmem-skills:
+      run: uv run --project scripts scripts/sync_zmem_skills.py
+      stage_fixed: false

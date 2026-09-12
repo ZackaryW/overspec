@@ -1,0 +1,19 @@
+[project]
+name = "overspec-maintenance"
+version = "0.0.0"
+description = "Independent repository maintenance scripts"
+requires-python = ">=3.12"
+dependencies = [
+    "saucepan-sdk @ git+https://github.com/ZackaryW/saucepan@43ba58936c48c3daf00e0e1cd25b870d4869731a#subdirectory=sdk/python",
+    "zuu @ git+https://github.com/ZackaryW/zuu@be05a93f6726e54568e11181d805eccd7dcaf4af",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = ["pytest>=8.4,<10"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
