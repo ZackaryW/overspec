@@ -36,13 +36,13 @@ default, and explain variable precedence and the tracked/ignored file distinctio
 
 ### Requirement: Referenced skills remain authoritative
 
-Bootstrap SHALL reference `create-overspec-trait` for trait authoring and
+Bootstrap SHALL reference `overspec-create-trait` for trait authoring and
 `zmem-author-commits` for commit memory, leaving their procedures in those skills.
 It SHALL report missing dependencies without inventing installation or execution.
 
 #### Scenario: Trait authoring requested during setup
 - **WHEN** setup includes adding reusable guidance
-- **THEN** bootstrap delegates to create-overspec-trait instead of reproducing the trait schema and validation procedure in its main workflow
+- **THEN** bootstrap delegates to overspec-create-trait instead of reproducing the trait schema and validation procedure in its main workflow
 
 ### Requirement: Explicit final change outcome
 

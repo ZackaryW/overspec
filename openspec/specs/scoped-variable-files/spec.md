@@ -58,13 +58,12 @@ Ordinary evaluation SHALL read current project layers at sync.
 
 ### Requirement: Fresh selected-change runtime layers
 
-For newly synchronized resolutions, effective runtime variables SHALL use explicit
+Effective runtime variables SHALL use explicit
 context JSON over selected-change current variables, selected-change persistent
-variables, project current variables, project persistent variables, and retained
-configured defaults, in that order. All file layers SHALL be read afresh per
+variables, project current variables, project persistent variables, and current
+project/user configured defaults, in that order. All file layers SHALL be read afresh per
 invocation and shared by runtime assertions and body rendering. Missing or removed
-file layers SHALL not revive their previously captured values. Live profile
-selection and user/project config edits SHALL not replace retained defaults.
+file layers SHALL not revive their previously captured values. Current profile selection and user/project config edits SHALL participate immediately. Transient sync-time inputs SHALL NOT be reused as runtime defaults.
 
 #### Scenario: Change specificity beats project defaults
 - **WHEN** project current specifies strict=false and selected-change persistent specifies strict=true
@@ -81,6 +80,10 @@ selection and user/project config edits SHALL not replace retained defaults.
 #### Scenario: No cross-invocation leakage
 - **WHEN** a later invocation selects another change or supplies no explicit context
 - **THEN** it uses only that invocation's applicable layers and never reuses the earlier context or change selection
+
+#### Scenario: Configuration defaults change
+- **WHEN** a configured variable changes after sync
+- **THEN** the next runtime invocation reads its current value without another sync
 
 ### Requirement: Explicit OpenSpec change scope
 

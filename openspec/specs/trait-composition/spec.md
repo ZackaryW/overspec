@@ -20,7 +20,7 @@ Overspec SHALL discover the packaged default, acquired repository sources define
 
 #### Scenario: Default profile spans separate trait documents
 - **WHEN** selected default contains traits.toml, trait-tdd.toml, and trait-zuu.toml
-- **THEN** all three documents contribute, tdd participates unconditionally, and zuu participates only when both its project-file and dependency assertions match, without a skill lookup
+- **THEN** all three documents contribute, tdd guidance participates unless explicitly disabled by its project boolean setting at sync, and zuu guidance participates only when enabled and both its project-file and dependency assertions match, without a skill lookup
 
 #### Scenario: Obsolete user content is not a source
 - **WHEN** the selected user home contains authored profile or standalone documents or `.state/remotes` content
@@ -144,7 +144,7 @@ Duplicates within one profile contributor or one standalone layer SHALL fail wit
 
 ### Requirement: Three evaluation lifetimes
 
-Overspec SHALL evaluate and retain compile-time assertion results and rendered bodies only during init or update. Sync SHALL reuse that retained compilation, evaluate ordinary traits immediately, and retain runtime definitions without evaluating runtime assertions. The runtime resolution command SHALL evaluate runtime traits using invocation context. Missing or incompatible compiled state SHALL require init/update instead of silently compiling during sync. Source or activation changes affecting compile-time definitions SHALL require update; runtime-only and ordinary-only edits SHALL be usable by the next sync without rerunning unchanged compile-time traits.
+Overspec SHALL evaluate and retain compile-time assertion results and rendered bodies only during init or update. Sync SHALL reuse that retained compilation, evaluate ordinary traits immediately, and retain runtime definitions without evaluating runtime assertions. The runtime resolution command SHALL load current effective runtime declarations and evaluate them using current invocation variables, without a sync resolution ID. Runtime SHALL NOT evaluate compile-time or normal traits; their retained results provide earlier-phase history. Runtime-only invocation SHALL work without init or sync when no retained state exists. Missing or incompatible compiled state SHALL require init/update instead of silently compiling during sync. Source or activation changes affecting compile-time definitions SHALL require update; runtime-only and ordinary-only edits SHALL be usable by the next sync without rerunning unchanged compile-time traits.
 
 #### Scenario: Tool availability changes after init
 - **WHEN** zmem becomes available after init and sync runs without update
@@ -156,11 +156,15 @@ Overspec SHALL evaluate and retain compile-time assertion results and rendered b
 
 #### Scenario: Deferred runtime body
 - **WHEN** sync encounters a runtime trait
-- **THEN** it retains the definition for a runtime command and does not emit its unconditional body
+- **THEN** it emits a deferred command selecting the attachment and unique names, not a snapshot ID or unconditional body
 
 #### Scenario: Details follow their declaration lifetime
 - **WHEN** compile-time details change after init
 - **THEN** sync requires update to capture the changed definition, while ordinary or runtime details changes are captured at the next sync without reevaluating unchanged compile-time traits
+
+#### Scenario: Runtime edits need no sync
+- **WHEN** a runtime body or condition changes after sync
+- **THEN** the next runtime invocation uses that edit without re-evaluating compile-time or normal traits
 
 ### Requirement: Assertions and output suppression
 
@@ -216,11 +220,11 @@ Overspec SHALL support `files-exist` with a nonempty list of project-root-relati
 
 Overspec SHALL support `python-dependency` with a package `name`. It SHALL read the project's `pyproject.toml` and inspect only `project.dependencies`. Missing pyproject.toml or an absent dependency list SHALL be a non-match; unreadable or malformed TOML, invalid dependency-list types, and malformed requirements SHALL report errors. Matching SHALL compare normalized declared requirement names, accepting versions, extras, direct references, and environment markers without evaluating whether a declared dependency is installed or its marker is active. Unrelated package names, optional/development-only dependencies, and entries only under `tool.uv.sources` SHALL not establish a match.
 
-The default zuu trait SHALL use exactly two assertions with default AND grouping: `files-exist` for both `.python-version` and `uv.lock`, and `python-dependency` for `zuu`. As an ordinary trait, it SHALL reevaluate these conditions at sync.
+The default zuu trait SHALL use exactly two assertions with default AND grouping: `files-exist` for both `.python-version` and `uv.lock`, and `python-dependency` for `zuu`. As a compiletime-trait, it SHALL evaluate these conditions at init/update and retain eligibility until the next update. Its `zuu` setting SHALL control publication at sync through the compiled setting gate.
 
 #### Scenario: Eligible Python uv project
 - **WHEN** both project files exist and project.dependencies declares zuu
-- **THEN** both assertions match and the zuu guidance is emitted
+- **THEN** both assertions match at init/update and subsequent sync emits the zuu guidance unless its setting is false
 
 #### Scenario: Missing uv project evidence
 - **WHEN** either .python-version or uv.lock is absent
@@ -236,11 +240,11 @@ The default zuu trait SHALL use exactly two assertions with default AND grouping
 
 #### Scenario: Project eligibility changes
 - **WHEN** project.dependencies removes zuu after an earlier successful sync
-- **THEN** the next sync omits the zuu trait and removes its old owned guidance
+- **THEN** init/update reevaluates eligibility and subsequent sync removes its old owned guidance; sync alone retains compiled eligibility
 
 ### Requirement: Dynamic bodies retain stable identity
 
-Overspec SHALL support scalar variable interpolation using `${key}` in bodies at the trait's evaluation time. Values SHALL follow the scoped-variable-files precedence at the trait's evaluation time. Project file layers SHALL participate in static evaluation; selected-change file layers SHALL participate only in runtime resolution. Compile-time values SHALL remain frozen until update. Runtime bodies SHALL use the same effective variable mapping as runtime assertions and the declarations from the current stored resolution. Unsupported legacy resolution formats and superseded IDs SHALL fail with recovery guidance rather than rendering historical bodies. Missing referenced values or non-scalar substitutions SHALL report errors rather than emit incomplete text. Interpolation SHALL not execute shell commands or source code. Literal `$$` SHALL represent a dollar sign. Body changes SHALL retain the same trait identity. Names and attachments SHALL not be dynamically interpolated.
+Overspec SHALL support scalar variable interpolation using `${key}` in bodies at the trait's evaluation time. Values SHALL follow the scoped-variable-files precedence at the trait's evaluation time. Project file layers SHALL participate in static evaluation; selected-change file layers SHALL participate only in runtime resolution. Compile-time values SHALL remain frozen until update. Runtime bodies SHALL use the same effective variable mapping as runtime assertions and the current effective declarations discovered at invocation. Runtime SHALL NOT accept a resolution ID or render bodies from a saved declaration snapshot. Missing referenced values or non-scalar substitutions SHALL report errors rather than emit incomplete text. Interpolation SHALL not execute shell commands or source code. Literal `$$` SHALL represent a dollar sign. Body changes SHALL retain the same trait identity. Names and attachments SHALL not be dynamically interpolated.
 
 #### Scenario: Runtime value changes
 - **WHEN** the same runtime trait is resolved twice with different supplied scalar values
@@ -277,3 +281,25 @@ Read-only resolution SHALL report retained, unmatched, overridden, and suppresse
 #### Scenario: No saved resolution
 - **WHEN** detail lookup has neither a usable successful-sync receipt nor an explicit valid resolution
 - **THEN** it fails with sync guidance rather than presenting current source text as synchronized details
+
+### Requirement: Sync-time setting gate for compiled guidance
+
+A compiletime-trait MAY declare setting as a nonblank literal variable key. Other lifetimes SHALL reject that field. Init/update SHALL evaluate eligibility, actions, and body independently of this publication gate. During sync/preview, an eligible unsuppressed compiled contribution SHALL consult only its referenced effective project setting using static variable precedence. Missing SHALL mean enabled; explicit false SHALL omit its body, and true SHALL permit normal publication. A present nonboolean value SHALL fail before modifying configuration. Selected-change or runtime context SHALL not participate.
+
+The gate SHALL NOT reevaluate compile-time assertions/actions, erase matched history, undo compiled actions, or enable a compilation-ineligible trait. Toggling the value SHALL not require recompilation unless the same variable is used by a compiled body. Disabling and re-enabling SHALL reuse the retained body. Explain SHALL identify the setting key and enabled decision separately from assertion eligibility. Ungated traits and unrelated settings SHALL retain existing behavior.
+
+#### Scenario: Toggle a compiled policy
+- **WHEN** a compiled TDD policy's tdd setting changes false then true between syncs
+- **THEN** its body disappears then returns without changing compilation or rerunning its assertions
+
+#### Scenario: Failed assertion stays ineligible
+- **WHEN** a compile-time assertion failed and the referenced setting becomes true
+- **THEN** the guidance remains absent until an init/update makes the trait eligible
+
+#### Scenario: Missing and invalid settings
+- **WHEN** an eligible trait's setting is absent or has a present nonboolean value
+- **THEN** absence enables publication, while the nonboolean value fails before a config write
+
+#### Scenario: Limited publication check
+- **WHEN** an unrelated variable changes or a gate hides a matched trait
+- **THEN** no new assertions run and matched history remains intact for dependencies

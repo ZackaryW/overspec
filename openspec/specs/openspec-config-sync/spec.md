@@ -27,7 +27,7 @@ an application traceback.
 
 The profile group SHALL expose only `activate` while mode is off. Named selection and listing SHALL be absent from help and completion and unavailable for direct dispatch. While mode is on, it SHALL additionally expose `use NAME` and `list`; activate SHALL remain available. Legacy profile `pull` and `update` SHALL be absent and unavailable in both modes without compatibility aliases. The ordinary top-level `overspec update` compilation command SHALL remain available. `activate` SHALL accept no name and report resulting mode in terminal and structured output. The surface SHALL reflect the chosen user home's current state on every invocation, including repeated invocations in one process. `--home` at every supported common-option position SHALL control the same toggle and command availability.
 
-Named-management core operations SHALL also reject use while mode is off. Ordinary init, update, sync, static trait resolution, saved runtime resolution, and detail lookup SHALL remain available. Removed flags or aliases SHALL not bypass the off-state boundary. Listing in enabled mode SHALL include default from the installed package and show each profile's ordered contributors, active/saved selection, and source kind/location rather than implying one winning directory. Package contributors SHALL identify the distribution and version; repository contributors SHALL identify source and revision; workspace contributors SHALL identify their paths. Contributor reporting SHALL not require parsing inactive profile documents.
+Named-management core operations SHALL also reject use while mode is off. Ordinary init, update, sync, static trait resolution, live runtime resolution, and saved detail lookup SHALL remain available. Removed flags or aliases SHALL not bypass the off-state boundary. Listing in enabled mode SHALL include default from the installed package and show each profile's ordered contributors, active/saved selection, and source kind/location rather than implying one winning directory. Package contributors SHALL identify the distribution and version; repository contributors SHALL identify source and revision; workspace contributors SHALL identify their paths. Contributor reporting SHALL not require parsing inactive profile documents.
 
 #### Scenario: Default command surface remains small
 - **WHEN** mode is off and help or completion is requested
@@ -145,51 +145,6 @@ Overspec SHALL identify each emitted static contribution using only its resolved
 - **WHEN** a trait's rendered body changes while its resolved name remains unchanged
 - **THEN** synchronization replaces the old contribution and retains the same short marker without appending a duplicate old body
 
-### Requirement: Bundled runtime resolution commands
-
-For each nonempty runtime group identified by resolution and exact attachment, synchronization SHALL emit exactly one instruction to run `overspec trait resolve` with that resolution reference and all unique trait names in deterministic order. It SHALL not emit one command per trait or unconditionally emit their runtime bodies. Different attachment points SHALL remain separate groups. The group SHALL occupy the first runtime trait's position in that destination's output order. Repeated sync SHALL replace stale groups and names without accumulating commands.
-
-The resolution reference SHALL identify a current resolution snapshot in the single state document containing the effective declarations of all three types, their optional details, retained static results, and resolved earlier-phase context. Runtime definitions SHALL remain unevaluated. It SHALL bind the command to its owning OpenSpec root and attachment. It SHALL not contain a profile prefix in trait IDs. A missing, corrupt, or mismatched bundle SHALL fail with resync guidance rather than resolve against a different current profile. Sync SHALL save the current resolution and receipt together after configuration replacement or no-op verification. Superseded IDs SHALL fail explicitly; they SHALL never load history or live profile definitions. Fresh project/change variable layers SHALL continue to feed current runtime matching and rendering.
-
-Current resolutions SHALL retain configured runtime defaults separately from live
-variable-file layers. Their instructions SHALL direct the caller to append
---change-root using the selected OpenSpec change root when applicable, without
-embedding one change's path or values in shared config. Saved detail lookup SHALL
-remain bound to current stored literal details and SHALL not load runtime variable
-files. Unsupported legacy resolution formats SHALL require regeneration through
-update and sync rather than silently adopting different input semantics.
-
-#### Scenario: Two runtime traits at the same point
-- **WHEN** two runtime traits attach to archive guidance in the same resolution
-- **THEN** archive guidance contains one command carrying each trait name once, with neither unconditional body
-
-#### Scenario: Distinct attachment groups
-- **WHEN** runtime traits attach to context and archive guidance
-- **THEN** each destination contains its own single command with only the IDs belonging to that destination
-
-#### Scenario: Active profile changes after sync
-- **WHEN** a user changes profile activation after a command has been synchronized
-- **THEN** the command continues to use its recorded resolution until a subsequent sync replaces it
-
-#### Scenario: Disabling profiles preserves retained runtime guidance
-- **WHEN** mode is disabled after a named-profile resolution was synchronized
-- **THEN** its retained runtime commands and detail lookup still use the recorded bundle without consulting current profile selection or requiring management mode
-
-#### Scenario: Grouped source migration preserves retained commands
-- **WHEN** live traits migrate from flat assertions to nested groups and a new resolution is synchronized
-- **THEN** the current snapshot retains grouped declarations and emits one unique runtime command per attachment; commands with superseded IDs fail
-
-#### Scenario: Change selection remains invocation-specific
-- **WHEN** a shared config is synchronized while several changes are active
-- **THEN** its bundled instructions contain no selected change's path or variable values and direct the caller to supply its current scope
-
-#### Scenario: Old resolution after variable files are introduced
-- **WHEN** a version-1 command is invoked after project or change variable files are created
-- **THEN** resolution fails with regeneration guidance instead of loading legacy history or reinterpreting that command using the files
-
-#### Scenario: Details do not depend on current files
-- **WHEN** current variable files are malformed or missing during saved detail lookup
-- **THEN** lookup returns the current stored literal details without attempting to load those files
 
 ### Requirement: Retain successful synchronization for detail lookup
 
@@ -211,7 +166,7 @@ Receipt publication failure SHALL return non-success and explain that configurat
 
 ### Requirement: Runtime command evaluates invocation context
 
-The runtime command SHALL evaluate requested runtime traits and their same-group runtime dependencies using the current stored resolution, returning only matched unsuppressed bodies for that attachment with name-only provenance. It SHALL accept a JSON context file, treat runtime context match as exact typed equality, and treat includes as exact membership rather than substring matching. The sketch's `kv = "do-not-archive=true"` SHALL compare against boolean true. Runtime assertions and body interpolation SHALL share effective variables from retained defaults, project/change variable files, and explicit invocation JSON according to scoped-variable-files precedence. An includes operand `$activeChanges` SHALL refer to a list supplied by those effective inputs and match when the target list overlaps it. Absent effective keys, equality type mismatches, and non-list membership targets SHALL make the predicate false, allowing the sketch's boolean-or-list alternatives. Malformed context input or missing/invalid referenced variables needed for an otherwise applicable membership evaluation SHALL report an error. Missing explicit context SHALL contribute an empty layer, not inherit from another invocation; other applicable file/default layers SHALL still participate. Unsupported legacy resolution formats and superseded IDs SHALL fail with recovery guidance, without evaluating legacy history or substituting live profile definitions.
+The runtime command SHALL evaluate requested runtime traits and their same-group runtime dependencies using the current effective source definitions, returning only matched unsuppressed bodies for that attachment with name-only provenance. It SHALL accept a JSON context file, treat runtime context match as exact typed equality, and treat includes as exact membership rather than substring matching. The sketch's `kv = "do-not-archive=true"` SHALL compare against boolean true. Runtime assertions and body interpolation SHALL share effective variables from current configured defaults, project/change variable files, and explicit invocation JSON according to scoped-variable-files precedence. An includes operand `$activeChanges` SHALL refer to a list supplied by those effective inputs and match when the target list overlaps it. Absent effective keys, equality type mismatches, and non-list membership targets SHALL make the predicate false, allowing the sketch's boolean-or-list alternatives. Malformed context input or missing/invalid referenced variables needed for an otherwise applicable membership evaluation SHALL report an error. Missing explicit context SHALL contribute an empty layer, not inherit from another invocation; other applicable file/default layers SHALL still participate. Runtime declarations SHALL be loaded afresh through existing discovery. Earlier-phase results SHALL be read from retained state without reevaluating those phases; no saved resolution ID is an input. Retained matches SHALL NOT make a name that is now runtime appear matched before its current condition succeeds. Missing state SHALL contribute empty earlier-phase history; corrupt existing state SHALL fail explicitly.
 
 The command SHALL be read-only, perform no remote retrieval, and leave config and compilation unchanged. It SHALL emit no applicable guidance when no requested trait matches. It SHALL not invoke itself recursively or advance, block, or archive an OpenSpec change. Instruction text accompanying the command SHALL direct the agent to run it from the owning project root, supply the selected --change-root and explicit context when applicable, and apply the returned guidance to the current operation.
 
@@ -242,3 +197,39 @@ The generated configuration SHALL expose static guidance and runtime-command ins
 #### Scenario: Read synchronized guidance through OpenSpec
 - **WHEN** context, proposal rules, and apply/archive guidance are synchronized in a project using the supported companion OpenSpec CLI
 - **THEN** its proposal, apply, and archive instruction outputs expose the corresponding static inputs and runtime commands, and the project's artifact contents and change lifecycle state remain unchanged by synchronization
+
+### Requirement: Live runtime resolution commands
+
+For each nonempty runtime group identified by exact attachment, synchronization SHALL emit exactly one instruction to run `overspec trait resolve --attach <attachment>` with all unique trait names in deterministic order. It SHALL NOT emit a resolution ID, one command per trait, or unconditional runtime bodies. Different attachments SHALL remain separate groups. The group SHALL occupy the first runtime trait's position in that destination's output order. Repeated sync SHALL replace stale names without accumulating commands.
+
+The command SHALL load current effective definitions using the current source/profile selection and existing source precedence. Unknown, removed, duplicate, or moved requested names SHALL fail explicitly rather than use saved definitions. Instructions SHALL direct the caller to run from the owning project root, append --change-root from OpenSpec for the selected change, and supply invocation context when available. Shared config SHALL not embed a selected change's path or values.
+
+Sync SHALL still save the current resolution and receipt together for saved detail inspection. Saved detail lookup SHALL remain bound to current stored literal details without loading live variable files. Runtime SHALL NOT accept --resolution; existing generated commands require sync to remove that option, with no compatibility alias.
+
+#### Scenario: Two runtime traits at the same point
+- **WHEN** two runtime traits attach to archive guidance
+- **THEN** one command carries each name once without a resolution ID or unconditional body
+
+#### Scenario: Distinct attachment groups
+- **WHEN** runtime traits attach to context and archive guidance
+- **THEN** each destination contains its own single command with only its names
+
+#### Scenario: Active profile changes after sync
+- **WHEN** a profile change replaces a requested runtime trait
+- **THEN** the next invocation uses the current effective definition; a missing requested name fails rather than using the old profile
+
+#### Scenario: Grouped source migration needs no sync
+- **WHEN** a runtime condition changes from a flat list to nested groups
+- **THEN** the next invocation evaluates the current groups without a replacement snapshot
+
+#### Scenario: Change selection remains invocation-specific
+- **WHEN** shared config serves several active changes
+- **THEN** commands contain no selected change's path or values and request the caller's current scope
+
+#### Scenario: Saved details remain independent
+- **WHEN** live sources or variables are invalid during saved detail lookup
+- **THEN** lookup still returns saved literal details while runtime lookup reports applicable live input errors
+
+#### Scenario: Removed runtime option
+- **WHEN** a caller supplies --resolution to trait resolve
+- **THEN** the CLI rejects the option rather than resolving saved runtime definitions
