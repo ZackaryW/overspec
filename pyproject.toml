@@ -24,7 +24,7 @@ overspec = "overspec:main"
 saucepan = ["saucepan-sdk @ git+https://github.com/ZackaryW/saucepan@43ba58936c48c3daf00e0e1cd25b870d4869731a#subdirectory=sdk/python"]
 
 [build-system]
-requires = ["hatchling>=1.27,<2"]
+requires = ["hatchling>=1.27,<2", "ruamel-yaml>=0.18"]
 build-backend = "hatchling.build"
 
 [tool.hatch.metadata]

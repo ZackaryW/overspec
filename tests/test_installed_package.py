@@ -151,6 +151,11 @@ root = files('overspec').joinpath('_bundled', 'profile-default')
 def snapshot():
     return {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.is_file()}
 before = snapshot()
+from overspec.core.skill_assets import skill_catalog, materialize_skills
+assert 'overspec-bootstrap' in {s.name for s in skill_catalog()}
+with materialize_skills(['overspec-bootstrap']) as sources:
+    assert (sources[0].path / 'references/controls.md').is_file()
+    assert 'site-packages' in str(sources[0].path)
 p = Project(Path.cwd(), Path.cwd() / 'home')
 p.initialize()
 result = p.sync()
