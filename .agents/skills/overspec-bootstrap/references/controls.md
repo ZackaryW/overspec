@@ -10,7 +10,7 @@
 | Loose `trait*.toml` | Declarations outside profile trees, layered after their own source's selected profile |
 | `.vars.toml` | Optional persistent variables, eligible for Git tracking |
 | `.current.toml` | Mutable local variables, initialized when missing and ignored by basename |
-| `.state.json` | One current compilation, synchronized resolution, and sync receipt |
+| `.state.json` | Current compilation, synchronized resolution, sync receipt, and optional schema baseline |
 | OpenSpec `changeRoot` | Exact selected change directory, possibly outside the implementation repository |
 
 A trait has a short stable name and a compact, independently actionable `body`.
@@ -125,7 +125,8 @@ legacy profile pull/update commands are removed with no compatibility aliases.
 Existing files stay untouched; relocate/acquire sources deliberately. Top-level
 update remains the compilation refresh command. Changed effective compiled inputs
 or selected name require update; ordinary/runtime-only edits need sync. Saved
-commands/details do not load the package or call Saucepan.
+detail lookup does not load the package or call Saucepan; runtime commands do read
+current effective sources.
 
 ## Choosing commands and handling diagnostics
 
@@ -187,3 +188,32 @@ suppresses publication, and a nonboolean value fails. Use project .vars/.current
 or configured defaults, not a selected change file. Toggle and sync without
 updating compilation; assertions and compiled actions remain retained. Use
 overspec-configure, overspec-sync, and overspec-diagnose for these tasks.
+
+## Managed skills and project schema
+
+`overspec skill list` reads packaged skills without native installation. For native
+operations require explicit --agent and --name or --all. Use status before install
+or update; install accepts absent targets, current updates are no-ops, and replacing
+unowned/local edits requires explicit --force. Keep provider errors visible.
+User-level skill setup works without a project or profile activation.
+
+The selected Overspec home contains the ZuAT registry at `zuat` and its immutable
+native-home binding at `zuat-home.json`. --agent-home chooses native agent files,
+independently of --home. Use separate Overspec homes for different native homes.
+History yields operation IDs for `overspec skill restore <id> --agent <agent>
+--name <skill>`. Restore checks later edits and can restore historical skills no
+longer packaged. Do not remove the registry/binding as a repair or mistake an ID
+for a Git hash. Results are per target, not a cross-agent transaction. Missing
+external skills such as zmem-author-commits remain external prerequisites.
+
+Normal project init installs `openspec/schemas/overspec` and its templates before
+change discovery. Update refreshes only unchanged managed files; the current
+baseline stays in .state.json. Different unmanaged or locally edited schema
+content causes a conflict. Reconcile/back up those files explicitly before retry;
+there is no force-schema option. Identical preexisting packaged content can be
+adopted without rewriting it. Preserve unrelated files and other schema names.
+Setup-only/sync do not publish schema files, and config.yaml/active-change schema
+selections are preserved. Select `schema: overspec` explicitly when requested.
+Schema writes target the owning project even with --store: a separate planning
+store needs its own schema availability. Skill restore does not restore schemas;
+schema customizations are normal project files suitable for Git.

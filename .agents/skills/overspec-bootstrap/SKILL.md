@@ -8,6 +8,11 @@ description: Orient or initialize an Overspec companion project, explain scoped 
 Use the installed CLI to establish the requested project state. OpenSpec owns
 changes and artifacts; Overspec composes guidance into its configuration.
 
+For user-level skill setup, inspect `overspec skill list` and `skill status` with
+the selected --agent and --name/--all. Use explicit skill install/update only when
+requested; project init does not install agent skills. Read the managed-assets
+section of [controls](references/controls.md) for scope, collisions, and recovery.
+
 ## Inspect and choose the next action
 
 1. Confirm the implementation project root and inspect `overspec --help`,
@@ -33,6 +38,10 @@ changes and artifacts; Overspec composes guidance into its configuration.
    `--change-root <path>` values obtained from OpenSpec status. Store and exact
    roots are mutually exclusive. Always keep `--project` bound to the owning
    implementation project, even when changes live in an external store.
+   Normal init installs packaged schema/templates before change discovery; update
+   refreshes unchanged managed files. Setup-only does not install the schema. Keep
+   the existing schema selection unless changing it was requested; availability
+   and selection are separate. Report local schema conflicts without overwriting.
 4. Inspect setup's per-target and Git-ignore results. A partial failure is not
    success; correct the reported issue and retry, preserving existing files.
    Do not create persistent files unless needed. Do not activate profiles merely

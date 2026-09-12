@@ -40,6 +40,14 @@ Run commands through `uv run overspec` when using this checkout rather than an
 installed console command. Before init, `overspec trait resolve --explain` lists
 discovered traits as unevaluated without writing state. Initialization creates
 normal `.over` state/current files, but does not copy the packaged profile there.
+Normal init also installs the packaged schema and templates into
+`openspec/schemas/overspec` before discovering changes. `overspec update` refreshes
+unchanged managed schema files alongside compilation. Local edits or differing
+unmanaged schemas are reported as conflicts; reconcile or back them up before
+retrying. The current file baseline lives in `.over/.state.json`; no schema history
+directory is created. Schema files can be committed to your project's Git history.
+Setup-only and sync never publish schema files. Existing schema selections stay
+unchanged: select `schema: overspec` in config.yaml explicitly when desired.
 
 To install a built release wheel into a user tool environment:
 
@@ -50,7 +58,7 @@ uv tool install /path/to/overspec-0.1.0-py3-none-any.whl
 The wheel declares pinned Git dependencies for zuat and zuu; installation needs
 those dependencies available. Subsequent default loading does not use the network.
 
-Use the repository's `overspec-bootstrap` skill for first-time orientation or
+Use the packaged `overspec-bootstrap` skill for first-time orientation or
 setup after creating another change. Normal init discovers active changes through
 OpenSpec and initializes missing `.current.toml` files. With an existing
 compilation, setup can be repeated independently:
@@ -71,6 +79,47 @@ guidance. Put any manual guidance you want to retain in traits before syncing.
 Other configuration values, including unknown keys and operation siblings, survive.
 Preview prints the target, candidate YAML, diff, resolution ID, and whether config
 would change. Add `--json` for structured output.
+
+## Install and recover user-level skills
+
+The wheel and sdist include this repository's `.agents/skills` with supporting
+references and agent metadata. Skill installation is explicit and works without
+an OpenSpec project or profile activation:
+
+```sh
+overspec skill list
+overspec skill status --agent codex --all
+overspec skill install --agent codex --all
+overspec skill update --agent codex --name overspec-bootstrap
+overspec skill history --agent codex --name overspec-bootstrap
+overspec skill restore op_FROM_HISTORY --agent codex --name overspec-bootstrap
+overspec skill remove --agent codex --name overspec-bootstrap
+```
+
+Repeat --agent or --name to select several; --name and --all are exclusive.
+Supported agent identifiers are codex, claude, kimi, and pi; actual availability
+and native-provider limitations are reported. `--json` provides undecorated results
+including individual operation IDs and partial failures. Install only accepts
+absent skills. Update preserves current content as a no-op; replacing unowned or
+locally edited content requires explicit `--force`. Invalid identities and provider
+boundaries remain errors. Existing OpenSpec installations are not silently adopted.
+
+ZuAT owns snapshots and recovery in `<Overspec home>/zuat`; the small sibling
+`zuat-home.json` binds that registry to its native user home. `--home` or
+OVERSPEC_HOME selects Overspec state, while --agent-home selects native agent files.
+Do not delete the binding to reuse history against a different home. Use a separate
+Overspec home for a different native home. Preserve the registry to retain recovery.
+
+Restoration uses domain operation IDs, not Git hashes, and restores prior content
+and ownership after reopening, even when the old package version is unavailable.
+Later edits require force; incomplete operations retain diagnostics and recovery
+evidence. Operations are not one cross-agent transaction. Skill restoration does
+not restore project schemas, trait config, or OpenSpec change records.
+
+Neither package installation nor project init/update/sync installs native skills.
+Referenced external skills such as zmem-author-commits are not bundled or installed
+automatically. Installing only one skill may leave its referenced companion skill
+unavailable; select the required packaged companions explicitly.
 
 ## Shared sources through Saucepan
 

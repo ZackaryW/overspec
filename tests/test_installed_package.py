@@ -105,9 +105,16 @@ def test_installed_default_lifecycle_and_overrides(installed, tmp_path):
         installed, project, home, "init", "--change-root", str(change), "--json"
     )
     assert result["setup"]["success"] and result["compilation"]
-    assert (project / 'openspec/schemas/overspec/schema.yaml').is_file()
-    schema_check = subprocess.run(['openspec', 'schema', 'validate', 'overspec'], cwd=project,
-                                  env=installed[1], capture_output=True, text=True, shell=os.name == 'nt')
+    assert (project / "openspec/schemas/overspec/schema.yaml").is_file()
+    schema_check = subprocess.run(
+        ["openspec", "schema", "validate", "overspec"],
+        check=False,
+        cwd=project,
+        env=installed[1],
+        capture_output=True,
+        text=True,
+        shell=os.name == "nt",
+    )
     assert schema_check.returncode == 0, schema_check.stdout + schema_check.stderr
     result = invoke(installed, project, home, "sync", "--json")
     assert "over:tdd" in config.read_text()
@@ -201,3 +208,54 @@ def test_installed_python_conditions_and_absent_optional_tools(installed, tmp_pa
         == "unmatched"
     )
     assert next(r for r in rows if r["name"] == "require-zmem")["status"] == "unmatched"
+
+
+def test_installed_skill_lifecycle_and_schema_instructions(installed, tmp_path):
+    project, home, native = (
+        tmp_path / "consumer",
+        tmp_path / "state",
+        tmp_path / "native",
+    )
+    project.mkdir()
+    selection = [
+        "--agent",
+        "kimi",
+        "--agent-home",
+        str(native),
+        "--name",
+        "overspec-bootstrap",
+        "--json",
+    ]
+    installed_result = invoke(installed, project, home, "skill", "install", *selection)
+    operation = installed_result["results"][0]["operation_id"]
+    target = native / ".kimi-code/skills/overspec-bootstrap"
+    assert (target / "references/controls.md").is_file()
+    assert (
+        invoke(installed, project, home, "skill", "update", *selection)["results"][0][
+            "changed"
+        ]
+        is False
+    )
+    invoke(installed, project, home, "skill", "restore", operation, *selection)
+    assert not target.exists()
+    assert not (project / "openspec").exists()
+    write(project, "openspec/config.yaml", "schema: overspec\n")
+    invoke(installed, project, home, "init", "--json")
+    for args in [
+        ["new", "change", "workflow-smoke"],
+        ["instructions", "design", "--change", "workflow-smoke", "--json"],
+    ]:
+        result = subprocess.run(
+            ["openspec", *args],
+            check=False,
+            cwd=project,
+            env=installed[1],
+            capture_output=True,
+            text=True,
+            shell=os.name == "nt",
+        )
+        assert result.returncode == 0, result.stderr + result.stdout
+    instruction = json.loads(result.stdout)
+    assert instruction["schemaName"] == "overspec"
+    assert "overspec-utilities" in instruction["instruction"]
+    assert "## Context" in instruction["template"]

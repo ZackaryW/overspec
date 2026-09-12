@@ -43,3 +43,15 @@ Return the cause, supporting output/source, and smallest repair. Do not initiali
 update, sync, edit settings, fetch, or change lifecycle state during a diagnosis-only
 request. If repair is already requested, apply the relevant bootstrap/configure/sync
 skill and verify its actual effect.
+
+For missing/outdated agent skills, compare `overspec skill list` with `skill status
+--agent <agent> --name <skill> --json`. Use skill history for recorded operation
+IDs. Status/history may initialize the registry and home binding but do not alter
+native skills; use list alone when no state creation is permitted. A home-binding
+mismatch requires the original native home or a separate Overspec home, not deletion
+of the binding. Refer requested recovery to bootstrap and the exact operation.
+
+For missing schema instructions, inspect `openspec schema which overspec` and
+the project schema baseline. Normal init installs, update refreshes, and setup-only
+does neither. Preserve local schema edits and report conflicting paths. Installing
+the schema does not select it; check config and the active change's metadata.

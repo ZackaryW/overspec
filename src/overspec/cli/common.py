@@ -16,7 +16,7 @@ HomeOption = Annotated[
     Path | None,
     typer.Option(
         "--home",
-        help="User profile home; defaults to OVERSPEC_HOME or ~/.overspec.",
+        help="Overspec user state and registry home; defaults to OVERSPEC_HOME or ~/.overspec.",
         rich_help_panel="Project",
     ),
 ]

@@ -33,8 +33,10 @@ def build_tree(tmp_path):
         REPO / "src", root / "src", ignore=shutil.ignore_patterns("__pycache__")
     )
     shutil.copytree(REPO / AUTHORED, root / AUTHORED)
-    shutil.copytree(REPO / '.agents/skills', root / '.agents/skills')
-    shutil.copytree(REPO / 'openspec/schemas/overspec', root / 'openspec/schemas/overspec')
+    shutil.copytree(REPO / ".agents/skills", root / ".agents/skills")
+    shutil.copytree(
+        REPO / "openspec/schemas/overspec", root / "openspec/schemas/overspec"
+    )
     return root
 
 
@@ -80,17 +82,37 @@ def test_release_and_sdist_wheels_contain_only_authored_traits(build_tree, tmp_p
     assert result.returncode == 0, result.stderr
     wheel = next((tmp_path / "dist").glob("*.whl"))
     assert wheel_traits(wheel) == expected
+
     def assets(wheel_path):
         with zipfile.ZipFile(wheel_path) as archive:
-            return {n: archive.read(n) for n in archive.namelist()
-                    if n.startswith(('overspec/_bundled/skills/', 'overspec/_bundled/schemas/'))}
+            return {
+                n: archive.read(n)
+                for n in archive.namelist()
+                if n.startswith(
+                    ("overspec/_bundled/skills/", "overspec/_bundled/schemas/")
+                )
+            }
+
     expected_assets = {}
-    for source, destination in [('.agents/skills', 'skills'), ('openspec/schemas/overspec', 'schemas/overspec')]:
-        for path in (build_tree / source).rglob('*'):
-            if destination == 'skills' and not (build_tree / source / path.relative_to(build_tree / source).parts[0] / 'SKILL.md').is_file():
+    for source, destination in [
+        (".agents/skills", "skills"),
+        ("openspec/schemas/overspec", "schemas/overspec"),
+    ]:
+        for path in (build_tree / source).rglob("*"):
+            if (
+                destination == "skills"
+                and not (
+                    build_tree
+                    / source
+                    / path.relative_to(build_tree / source).parts[0]
+                    / "SKILL.md"
+                ).is_file()
+            ):
                 continue
-            if path.is_file() and '__pycache__' not in path.parts:
-                expected_assets[f'overspec/_bundled/{destination}/{path.relative_to(build_tree / source).as_posix()}'] = path.read_bytes()
+            if path.is_file() and "__pycache__" not in path.parts:
+                expected_assets[
+                    f"overspec/_bundled/{destination}/{path.relative_to(build_tree / source).as_posix()}"
+                ] = path.read_bytes()
     assert assets(wheel) == expected_assets
     extracted = tmp_path / "extracted"
     with tarfile.open(next((tmp_path / "dist").glob("*.tar.gz"))) as archive:
@@ -98,7 +120,7 @@ def test_release_and_sdist_wheels_contain_only_authored_traits(build_tree, tmp_p
     result = run_build(next(extracted.iterdir()), tmp_path / "rebuilt", "--wheel")
     assert result.returncode == 0, result.stderr
     assert wheel_traits(next((tmp_path / "rebuilt").glob("*.whl"))) == expected
-    assert assets(next((tmp_path / 'rebuilt').glob('*.whl'))) == expected_assets
+    assert assets(next((tmp_path / "rebuilt").glob("*.whl"))) == expected_assets
     with zipfile.ZipFile(wheel) as archive:
         assert not any(
             n.startswith(("openspec/", ".agents/")) for n in archive.namelist()
@@ -156,7 +178,7 @@ def test_redirected_trait_directory_fails_build(build_tree, tmp_path):
 
 
 def test_missing_schema_template_fails_build(build_tree, tmp_path):
-    (build_tree / 'openspec/schemas/overspec/templates/tasks.md').unlink()
-    result = run_build(build_tree, tmp_path / 'dist', '--wheel')
+    (build_tree / "openspec/schemas/overspec/templates/tasks.md").unlink()
+    result = run_build(build_tree, tmp_path / "dist", "--wheel")
     assert result.returncode != 0
-    assert 'template' in result.stderr.lower()
+    assert "template" in result.stderr.lower()

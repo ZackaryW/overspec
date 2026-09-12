@@ -6,6 +6,7 @@ from .common import scope
 from .profile_mode import InvocationGroup
 from .profiles import app as profiles
 from .project import initialize, sync, update
+from .skills import app as skills
 from .traits import app as traits
 
 app = typer.Typer(
@@ -25,6 +26,7 @@ app.command("update", rich_help_panel="Project workflow")(update)
 app.command("sync", rich_help_panel="Project workflow")(sync)
 app.add_typer(profiles, name="profile", rich_help_panel="Profiles and traits")
 app.add_typer(traits, name="trait", rich_help_panel="Profiles and traits")
+app.add_typer(skills, name="skill", rich_help_panel="Agent setup")
 
 
 def main(argv=None):
