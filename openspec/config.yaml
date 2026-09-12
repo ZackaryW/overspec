@@ -76,12 +76,12 @@ context: |
   During exploration: Ask whether a bounded prototype is needed unless concrete current evidence establishes that none is needed. State the evidence when bypassing the choice.
   <!-- over:prototype-explore -->
 
-  For each behavior change, write and run a test that fails for the intended
-  reason before implementing. Implement minimally, rerun to green, then refactor
-  under passing tests. Never weaken tests to manufacture a pass. Run affected
-  tests and required broader checks before completion, and report observed
-  red/green evidence. Changes without behavioral impact need appropriate
-  verification, not artificial failing tests.
+  Before behavioral implementation, read and apply Superpowers' test-driven-development:
+  https://raw.githubusercontent.com/obra/superpowers/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/test-driven-development/SKILL.md
+  Read its sibling writing-good-tests.md at the same revision. Complete each
+  behavior through observed RED, minimal implementation, GREEN, then refactor;
+  report the evidence. If either reference is unavailable, report it and pause
+  behavioral implementation rather than claiming compliance.
   <!-- over:tdd -->
 
   Prefer zuu's public APIs before writing equivalent utilities. Inspect the

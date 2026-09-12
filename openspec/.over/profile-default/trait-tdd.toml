@@ -3,42 +3,27 @@ name = "tdd"
 setting = "tdd"
 attach = "context"
 body = """
-For each behavior change, write and run a test that fails for the intended
-reason before implementing. Implement minimally, rerun to green, then refactor
-under passing tests. Never weaken tests to manufacture a pass. Run affected
-tests and required broader checks before completion, and report observed
-red/green evidence. Changes without behavioral impact need appropriate
-verification, not artificial failing tests.
+Before behavioral implementation, read and apply Superpowers' test-driven-development:
+https://raw.githubusercontent.com/obra/superpowers/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/test-driven-development/SKILL.md
+Read its sibling writing-good-tests.md at the same revision. Complete each
+behavior through observed RED, minimal implementation, GREEN, then refactor;
+report the evidence. If either reference is unavailable, report it and pause
+behavioral implementation rather than claiming compliance.
 """
 details = """
-1. Select one observable behavior and the smallest meaningful automated test
-   that proves it through public outputs, state transitions, or side effects.
-   For a bug fix, first reproduce the bug with a failing regression test.
-2. Write or update that test before changing implementation code. Run it and
-   observe the failure. Confirm the failure is caused by the missing or wrong
-   behavior, not an unrelated dependency, fixture, syntax, or environment error.
-   A test that already passes does not establish red; correct the test or choose
-   the next missing behavior before implementing.
-3. Only after observing the intended red result, make the smallest implementation
-   change needed to satisfy the test. Reuse established project boundaries and
-   relevant dependency APIs. Do not implement additional untested behaviors.
-4. Rerun the focused test and observe green. If it still fails, correct the
-   implementation and rerun it. Do not weaken assertions, skip the test, or
-   change the expected behavior merely to obtain a passing result.
-5. Refactor only after green. Preserve behavior and rerun affected tests after
-   refactoring. Finish the current red-green-refactor cycle before starting the
-   next behavior, and repeat the cycle in small increments.
-6. Prefer focused pytest tests for behavior that they can establish completely.
-   Use broader integration or Behave coverage when the acceptance evidence spans
-   components. Assert actual outcomes; source matching, file counts, and tests
-   that merely mirror implementation structure are not behavioral proof.
-7. Run affected tests throughout implementation, then the relevant broader suites
-   and required build or validation checks before declaring completion. Report
-   the observed red failure, the subsequent green result, and checks not run.
-   Never claim a test ran or passed without observing its result.
+The pinned skill owns the TDD procedure, examples, deviation handling, and test
+quality checks. Its required companion is:
+https://raw.githubusercontent.com/obra/superpowers/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/test-driven-development/writing-good-tests.md
 
-This process governs implementation behavior changes. Documentation-only edits
-and mechanical changes without behavior changes need appropriate verification,
-not artificial failing tests. If a required behavioral test cannot run, report
-the obstacle; do not claim that the red or green step was completed.
+Read both pinned references, or verified local copies of that revision; an
+installed skill with the same name is not proof of matching content. This trait
+references external guidance; it does not install or vendor either document.
+
+Apply to implementation behavior changes. Prose-only and mechanical edits without
+behavior changes need appropriate verification, not artificial failing tests.
+Any restart applies to newly authored work for the current behavior; preserve
+preexisting and user-owned work. Framework selection belongs to separate traits.
+
+The compile-time definition refreshes at init/update. The tdd boolean publication
+switch is checked at sync; missing enables it and false disables it.
 """
