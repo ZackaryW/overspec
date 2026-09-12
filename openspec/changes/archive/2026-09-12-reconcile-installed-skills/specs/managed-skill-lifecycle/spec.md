@@ -1,10 +1,4 @@
-# managed-skill-lifecycle Specification
-
-## Purpose
-
-Manage explicit user-level installation of packaged skills with observable ownership, recoverable content changes, and narrowly scoped restoration.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Explicit user-level skill commands
 
@@ -61,11 +55,3 @@ History SHALL expose skill operation identifiers and affected native identities 
 #### Scenario: Unrelated history and later edits
 - **WHEN** a caller selects an unrelated operation or restoration would overwrite later unapproved edits
 - **THEN** restoration fails with a scope or conflict diagnostic and preserves those targets
-
-### Requirement: Observable partial outcomes
-
-Human output SHALL identify targets, classifications, changes, operation IDs, and recovery guidance. JSON SHALL expose those results without terminal styling. Unsupported agents or scopes, unavailable providers, partial failures, and indeterminate recovery SHALL return non-success without claiming an atomic multi-skill or multi-agent transaction. Retained recovery evidence SHALL survive failures. Inspection and history SHALL not mutate native skills; restoring or retrying SHALL always be an explicit action.
-
-#### Scenario: One selected target fails
-- **WHEN** one skill succeeds and another fails during a selected operation
-- **THEN** results distinguish both outcomes, retain available recovery identifiers, and return non-success without claiming all targets rolled back
